@@ -11,6 +11,9 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.SparkConf;
 
 public class KeyPlayer {
+	public static SparkConf conf = new SparkConf().setAppName("KeyPlayer").setMaster("local[*]");
+	public static JavaSparkContext sc = new JavaSparkContext(conf);
+	
 	public static void main(String[] args) {
 		System.out.println("--------------------------------->>>>>>Ngưỡng sức ảnh hưởng là: " + args[0]);
 		Data.theta = new BigDecimal(args[0]);
@@ -18,9 +21,6 @@ public class KeyPlayer {
 		Data.iNeed = Integer.parseInt(args[1]);
 		
 		// TODO Auto-generated method stub
-		SparkConf conf = new SparkConf().setAppName("KeyPlayer").setMaster("local[*]");
-		JavaSparkContext sc = new JavaSparkContext(conf);
-
 		long lStart = System.currentTimeMillis();
 		Graph g = new Graph();
 		

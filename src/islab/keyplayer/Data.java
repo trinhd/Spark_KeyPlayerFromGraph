@@ -8,7 +8,9 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.PairFunction;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -16,6 +18,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+
+import scala.Tuple2;
 
 public class Data implements Function<String, Graph> {
 	public static BigDecimal theta = new BigDecimal("0.3");// ngưỡng sức ảnh hưởng
@@ -62,6 +66,15 @@ public class Data implements Function<String, Graph> {
 			// nhan dien
 			Type typeSpreadCoefficient = new TypeToken<HashMap<String, BigDecimal>>() {
 			}.getType();
+			
+			PairFunction<String, String, BigDecimal> pairfunc = new PairFunction<String, String, BigDecimal>() {
+				
+				@Override
+				public Tuple2<String, BigDecimal> call(String arg0) throws Exception {
+					// TODO Auto-generated method stub
+					return null;
+				}
+			};
 
 			if (jaVertices != null) {
 				for (JsonElement jeVertex : jaVertices) {
@@ -69,9 +82,9 @@ public class Data implements Function<String, Graph> {
 					String sName = joVertex.get("Name").getAsString();
 					JsonObject joSpreadCoefficient = joVertex.getAsJsonObject("SpreadCoefficient");
 					Vertex vertex = null;
-					Map<String, BigDecimal> mSpreadCoefficient = null;
+					JavaPairRDD<String, BigDecimal> mSpreadCoefficient = null;
 					if (joSpreadCoefficient != null) {
-						mSpreadCoefficient = gson.fromJson(joSpreadCoefficient, typeSpreadCoefficient);
+						mSpreadCoefficient.
 						if (mSpreadCoefficient != null) {
 							vertex = new Vertex(sName, mSpreadCoefficient);
 						} else {
