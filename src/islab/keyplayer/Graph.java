@@ -450,8 +450,10 @@ public class Graph implements Serializable {
 	}
 	
 	
-	@Override
+	/*@Override
 	public String toString(){
+		vertices.cache();
+		edges.cache();
 		String sResult = new String("Vertices:\n");
 		for (Vertex vertex : vertices.collect()) {
 			sResult += "Name:" + vertex.getName() + "\n";
@@ -467,5 +469,6 @@ public class Graph implements Serializable {
 			sResult += "Start: " + edge.getStartVertexName() + ", End: " + edge.getEndVertexName() + ", DirectInfluence: " + edge.getDirectInfluence().toString() + "\n";
 		}
 		return sResult;
-	}
+	}*/
+}
 }

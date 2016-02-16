@@ -26,12 +26,15 @@ public class KeyPlayer {
 		Graph g = new Graph();
 		
 		JavaRDD<String> dataFile = sc.textFile("./graph_data/graph_oneline_20160215.json");
+		dataFile.cache();
 		//System.out.println(dataFile.first());
 		JavaRDD<Graph> gRDD = dataFile.map(new Data());
 		//gRDD.saveAsTextFile("AAAAAA");
+		gRDD.cache();
 		g = gRDD.first();
-		System.out.println("--------------------------------->>>>>>" + g.toString());
+		//System.out.println("--------------------------------->>>>>>" + g.toString());
 		JavaRDD<List<String>> s = g.getAllPathBetweenTwoVertex("1", "18");
+		s.cache();
 		System.out.println("--------------------------------->>>>>>Số đường đi: " + s.count());
 		System.out.println("--------------------------------->>>>>>" + s.toString());
 		System.out.println("--------------------------------->>>>>>Sức ảnh hưởng gián tiếp giữa 2 đỉnh là: " + g.IndirectInfluenceOfVertexOnOtherVertex("1", "18"));
