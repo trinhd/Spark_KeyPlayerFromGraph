@@ -2,11 +2,7 @@ package islab.keyplayer;
 
 import java.util.Comparator;
 
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.Function;
-
-import scala.Tuple2;
 
 public class ValueComparator implements Comparator<JavaRDD<String>> {
 	

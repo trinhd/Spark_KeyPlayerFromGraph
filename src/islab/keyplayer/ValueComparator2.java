@@ -2,9 +2,6 @@ package islab.keyplayer;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
-import java.util.Map;
-
-import org.apache.spark.api.java.JavaRDD;
 
 public class ValueComparator2 implements Comparator<BigDecimal> {
 	

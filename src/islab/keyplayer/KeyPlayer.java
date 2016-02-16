@@ -1,16 +1,12 @@
 package islab.keyplayer;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.storage.StorageLevel;
+
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaSparkContext;
 
 public class KeyPlayer {
 	public static SparkConf conf = new SparkConf().setAppName("KeyPlayer").setMaster("local[*]");

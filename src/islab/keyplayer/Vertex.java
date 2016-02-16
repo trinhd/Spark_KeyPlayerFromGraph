@@ -4,11 +4,8 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.Function;
-import com.google.gson.annotations.SerializedName;
 
-import scala.Tuple2;
+import com.google.gson.annotations.SerializedName;
 
 public class Vertex implements Serializable{
 	@SerializedName("Name")
@@ -42,13 +39,7 @@ public class Vertex implements Serializable{
 	}
 
 	public BigDecimal getSpreadCoefficientFromVertexName(String sName) {
-		JavaPairRDD<String, BigDecimal> rddResult = mSpreadCoefficient.filter(new Function<Tuple2<String, BigDecimal>, Boolean>() {
-			
-			@Override
-			public Boolean call(Tuple2<String, BigDecimal> arg0) throws Exception {
-				return arg0._1.equals(sName);
-			}
-		});
+		JavaPairRDD<String, BigDecimal> rddResult = mSpreadCoefficient.filter(arg0 -> arg0._1.equals(sName));
 		
 		return rddResult.first()._2;
 	}
