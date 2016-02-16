@@ -298,6 +298,8 @@ public class Graph implements Serializable {
 			}
 		});
 		
+		rddIndirectInfluence.cache();
+		
 		JavaRDD<String> rddOverThresholdVertex = rddIndirectInfluence.filter(new Function<Tuple2<String,BigDecimal>, Boolean>() {
 			
 			@Override
@@ -407,12 +409,12 @@ public class Graph implements Serializable {
 			//PrintCombine(a, k);
 			int iTong = 0;
 			for (int l = 1; l <= k; l++) {
-				iTong += indirectInfluence.getListVertexByIndex(a[l] - 1).size();
+				iTong += indirectInfluence.getListVertexByIndex(a[l] - 1).count();
 			}
 			if (iTong >= Data.iNeed) {
 				List<String> lMem = new ArrayList<String>();
 				for (int l = 1; l <= k; l++) {
-					for (String string : indirectInfluence.getListVertexByIndex(a[l] - 1)) {
+					for (String string : indirectInfluence.getListVertexByIndex(a[l] - 1).collect()) {
 						if (!lMem.contains(string)) {
 							lMem.add(string);
 						}

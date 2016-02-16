@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.SparkConf;
 
@@ -30,14 +31,14 @@ public class KeyPlayer {
 		//gRDD.saveAsTextFile("AAAAAA");
 		g = gRDD.first();
 		System.out.println("--------------------------------->>>>>>" + g.toString());
-		List<List<String>> s = g.getAllPathBetweenTwoVertex("1", "18");
-		System.out.println("--------------------------------->>>>>>Số đường đi: " + s.size());
-		System.out.println("--------------------------------->>>>>>" + s);
+		JavaRDD<List<String>> s = g.getAllPathBetweenTwoVertex("1", "18");
+		System.out.println("--------------------------------->>>>>>Số đường đi: " + s.count());
+		System.out.println("--------------------------------->>>>>>" + s.toString());
 		System.out.println("--------------------------------->>>>>>Sức ảnh hưởng gián tiếp giữa 2 đỉnh là: " + g.IndirectInfluenceOfVertexOnOtherVertex("1", "18"));
 		
-		Map<String, BigDecimal> all = g.getAllInfluenceOfVertices();
+		JavaPairRDD<String, BigDecimal> all = g.getAllInfluenceOfVertices();
 		
-		System.out.println("--------------------------------->>>>>>Sức ảnh hưởng của tất cả các đỉnh:\n" + Arrays.toString(all.entrySet().toArray()));
+		System.out.println("--------------------------------->>>>>>Sức ảnh hưởng của tất cả các đỉnh:\n" + all.toString());
 		
 		IndirectInfluence inif = g.getIndirectInfluence();
 		System.out.println("--------------------------------->>>>>>Sức ảnh hưởng vượt ngưỡng của tất cả các đỉnh:\n" + inif.toString());
