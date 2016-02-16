@@ -4,21 +4,12 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.PairFlatMapFunction;
-import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.function.VoidFunction;
 
-import groovy.lang.Tuple;
 import scala.Tuple2;
 
 public class Graph implements Serializable {
@@ -36,10 +27,6 @@ public class Graph implements Serializable {
 		this.lCount = 0;
 	}
 
-	/*public boolean addVertex(String sName, Map<String, BigDecimal> mSpreadCoefficient) {
-		return this.getVertexFromName(sName) != null ? false : vertices.add(new Vertex(sName, mSpreadCoefficient));
-	}*/
-
 	public void addVertex(Vertex vertex) {
 		List<Vertex> lTemp = new ArrayList<Vertex>();
 		lTemp.add(vertex);
@@ -52,11 +39,6 @@ public class Graph implements Serializable {
 		this.edges = this.edges.union(KeyPlayer.sc.parallelize(lTemp));
 	}
 
-	/*public boolean addEdge(String sStart, String sEnd, BigDecimal fDirectInfluence) {
-		return this.getEdgeFromStartEndVertex(sStart, sEnd) != null ? false
-				: edges.add(new Edge(sStart, sEnd, fDirectInfluence));
-	}*/
-
 	public long countVertex() {
 		return vertices.count();
 	}
@@ -65,20 +47,9 @@ public class Graph implements Serializable {
 		return edges.count();
 	}
 
-	/*public boolean containVertex(Vertex vertex) {
-		return vertices.contains(vertex);
-	}*/
-
 	public Vertex getVertexFromName(String sName) {
 		if (!vertices.isEmpty()) {
-			JavaRDD<Vertex> v = vertices.filter(new Function<Vertex, Boolean>() {
-				
-				@Override
-				public Boolean call(Vertex arg0) throws Exception {
-					// TODO Auto-generated method stub
-					return arg0.getName().equals(sName);
-				}
-			});
+			JavaRDD<Vertex> v = vertices.filter(arg0 -> arg0.getName().equals(sName));
 			return v.first();
 		}
 		return null;
@@ -93,20 +64,9 @@ public class Graph implements Serializable {
 		return new BigDecimal("-1");
 	}
 
-	/*public boolean containEdge(Edge edge) {
-		return edges.contains(edge);
-	}*/
-
 	public Edge getEdgeFromStartEndVertex(String sStart, String sEnd) {
 		if (!edges.isEmpty()) {
-			JavaRDD<Edge> e = edges.filter(new Function<Edge, Boolean>() {
-				
-				@Override
-				public Boolean call(Edge arg0) throws Exception {
-					// TODO Auto-generated method stub
-					return (arg0.getStartVertexName().equals(sStart) && arg0.getEndVertexName().equals(sEnd));
-				}
-			});
+			JavaRDD<Edge> e = edges.filter(arg0 -> (arg0.getStartVertexName().equals(sStart) && arg0.getEndVertexName().equals(sEnd)));
 			return e.first();
 		}
 		return null;
@@ -124,55 +84,27 @@ public class Graph implements Serializable {
 		JavaRDD<Edge> listEdge = null;
 
 		if (!edges.isEmpty()) {
-			listEdge = edges.filter(new Function<Edge, Boolean>() {
-				
-				@Override
-				public Boolean call(Edge arg0) throws Exception {
-					// TODO Auto-generated method stub
-					return arg0.getStartVertexName().equals(sStartVertexName);
-				}
-			});
+			listEdge = edges.filter(arg0 -> arg0.getStartVertexName().equals(sStartVertexName));
 		}
 		return listEdge;
 	}
 
 	public JavaRDD<Edge> getEdgesEndAtVertex(String sEndVertexName) {
 		JavaRDD<Edge> listEdge = null;
-
+		
+		edges.cache();
+		System.out.println("--------------------------------->>>>>>EEEEEEEEEEEEEEEE" + edges.toString());
 		if (!edges.isEmpty()) {
-			listEdge = edges.filter(new Function<Edge, Boolean>() {
-				
-				@Override
-				public Boolean call(Edge arg0) throws Exception {
-					// TODO Auto-generated method stub
-					return arg0.getEndVertexName().equals(sEndVertexName);
-				}
-			});
+			listEdge = edges.filter(arg0 -> arg0.getEndVertexName().equals(sEndVertexName));
 		}
 		return listEdge;
 	}
-
-	/*public List<Vertex> getVerticesPointedByVertex(Vertex vertex) {
-		List<Vertex> result = new ArrayList<Vertex>();
-		List<Edge> listEdges = getEdgesStartAtVertex(vertex.getName());
-
-		for (Edge edge : listEdges) {
-			result.add(getVertexFromName(edge.getEndVertexName()));
-		}
-
-		return result;
-	}*/
 
 	public JavaRDD<String> getVerticesPointedByVertex(String sVertexName) {
 		JavaRDD<String> result = null;
 		JavaRDD<Edge> listEdges = getEdgesStartAtVertex(sVertexName);
 
-		result = listEdges.map(new Function<Edge, String>() {
-			@Override
-			public String call(Edge e){
-				return e.getEndVertexName();
-			}
-		});
+		result = listEdges.map(e -> e.getEndVertexName());
 
 		return result;
 	}
@@ -244,34 +176,24 @@ public class Graph implements Serializable {
 
 		JavaRDD<List<String>> allpath = getAllPathBetweenTwoVertex(sStartName, sEndName);
 		if (allpath != null) {
-			JavaRDD<BigDecimal> rddResult = allpath.flatMap(new FlatMapFunction<List<String>, BigDecimal>() {
-				@Override
-				public Iterable<BigDecimal> call(List<String> path){
-					BigDecimal bdResult = BigDecimal.ZERO;
-					String sBefore = null;
-					for (String v : path) {
-						if (sBefore != null) {
-							bdResult = bdResult.add(getVertexSpreadCoefficientFromName(v, sBefore)
-									.multiply(getEdgeDirectInfluenceFromStartEndVertex(sBefore, v)));
-							if (bdResult.doubleValue() >= 1.0) {
-								return Arrays.asList(BigDecimal.ONE);
-							}
+			JavaRDD<BigDecimal> rddResult = allpath.flatMap(path -> {
+				BigDecimal bdResult = BigDecimal.ZERO;
+				String sBefore = null;
+				for (String v : path) {
+					if (sBefore != null) {
+						bdResult = bdResult.add(getVertexSpreadCoefficientFromName(v, sBefore)
+								.multiply(getEdgeDirectInfluenceFromStartEndVertex(sBefore, v)));
+						if (bdResult.doubleValue() >= 1.0) {
+							return Arrays.asList(BigDecimal.ONE);
 						}
-						sBefore = v;
 					}
-					
-					return Arrays.asList(bdResult);
+					sBefore = v;
 				}
+				
+				return Arrays.asList(bdResult);
 			});
 			
-			fIndirectInfluence = rddResult.reduce(new Function2<BigDecimal, BigDecimal, BigDecimal>() {
-				
-				@Override
-				public BigDecimal call(BigDecimal arg0, BigDecimal arg1) throws Exception {
-					// TODO Auto-generated method stub
-					return arg0.add(arg1);
-				}
-			});
+			fIndirectInfluence = rddResult.reduce((arg0, arg1) -> arg0.add(arg1));
 			
 			if (fIndirectInfluence.compareTo(BigDecimal.ONE) == 1){
 				fIndirectInfluence = BigDecimal.ONE;
@@ -284,41 +206,24 @@ public class Graph implements Serializable {
 	private BigDecimal IndirectInfluenceOfVertexOnAllVertex(String sVertexName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
 		
-		JavaPairRDD<String, BigDecimal> rddIndirectInfluence = vertices.mapToPair(new PairFunction<Vertex, String, BigDecimal>() {
-			@Override
-			public Tuple2<String, BigDecimal> call(Vertex vertex){
-				String vName = vertex.getName();
-				if (!vName.equals(sVertexName)) {
-					BigDecimal bd = IndirectInfluenceOfVertexOnOtherVertex(sVertexName, vName);
-					return new Tuple2<String, BigDecimal>(vName, bd);
-				}
-				else {
-					return new Tuple2<String, BigDecimal>(sVertexName, BigDecimal.ZERO);
-				}
+		JavaPairRDD<String, BigDecimal> rddIndirectInfluence = vertices.mapToPair(vertex -> {
+			String vName = vertex.getName();
+			if (!vName.equals(sVertexName)) {
+				BigDecimal bd = IndirectInfluenceOfVertexOnOtherVertex(sVertexName, vName);
+				return new Tuple2<String, BigDecimal>(vName, bd);
+			}
+			else {
+				return new Tuple2<String, BigDecimal>(sVertexName, BigDecimal.ZERO);
 			}
 		});
 		
 		rddIndirectInfluence.cache();
 		
-		JavaRDD<String> rddOverThresholdVertex = rddIndirectInfluence.filter(new Function<Tuple2<String,BigDecimal>, Boolean>() {
-			
-			@Override
-			public Boolean call(Tuple2<String, BigDecimal> arg0) throws Exception {
-				// TODO Auto-generated method stub
-				return (arg0._2.compareTo(Data.theta) != -1);
-			}
-		}).keys();
+		JavaRDD<String> rddOverThresholdVertex = rddIndirectInfluence.filter(arg0 -> (arg0._2.compareTo(Data.theta) != -1)).keys();
 		
 		indirectInfluence.addNewVertex(sVertexName, rddOverThresholdVertex);
 		
-		fIndirectInfluence = rddIndirectInfluence.values().reduce(new Function2<BigDecimal, BigDecimal, BigDecimal>() {
-			
-			@Override
-			public BigDecimal call(BigDecimal arg0, BigDecimal arg1) throws Exception {
-				// TODO Auto-generated method stub
-				return arg0.add(arg1);
-			}
-		});
+		fIndirectInfluence = rddIndirectInfluence.values().reduce((arg0, arg1) -> arg0.add(arg1));
 		
 		return fIndirectInfluence;
 	}
@@ -331,12 +236,9 @@ public class Graph implements Serializable {
 			mUnsortedAll.put(vName, IndirectInfluenceOfVertexOnAllVertex(vName));
 		}*/
 		
-		mUnsortedAll = vertices.mapToPair(new PairFunction<Vertex, String, BigDecimal>() {
-			@Override
-			public Tuple2<String, BigDecimal> call(Vertex vertex){
-				String vName = vertex.getName();
-				return new Tuple2<String, BigDecimal>(vName, IndirectInfluenceOfVertexOnAllVertex(vName));
-			}
+		mUnsortedAll = vertices.mapToPair(vertex -> {
+			String vName = vertex.getName();
+			return new Tuple2<String, BigDecimal>(vName, IndirectInfluenceOfVertexOnAllVertex(vName));
 		});
 
 		/*Map<String, BigDecimal> mSortedAll = new TreeMap<String, BigDecimal>(new ValueComparator2(mUnsortedAll));
@@ -344,21 +246,11 @@ public class Graph implements Serializable {
 		/*mUnsortedAll.entrySet().stream().sorted(Map.Entry.comparingByValue())
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));*/
 		
-		JavaPairRDD<BigDecimal, String> mSortedAll = mUnsortedAll.mapToPair(new PairFunction<Tuple2<String,BigDecimal>, BigDecimal, String>() {
-			@Override
-			public Tuple2<BigDecimal, String> call(Tuple2<String,BigDecimal> t){
-				return t.swap();
-			}
-		});
+		JavaPairRDD<BigDecimal, String> mSortedAll = mUnsortedAll.mapToPair(t -> t.swap());
 		
 		mSortedAll.sortByKey(new ValueComparator2());
 		
-		mUnsortedAll = mSortedAll.mapToPair(new PairFunction<Tuple2<BigDecimal,String>, String, BigDecimal>() {
-			@Override
-			public Tuple2<String, BigDecimal> call(Tuple2<BigDecimal,String> t){
-				return t.swap();
-			}
-		});
+		mUnsortedAll = mSortedAll.mapToPair(t -> t.swap());
 
 		return mUnsortedAll;
 	}
@@ -369,12 +261,10 @@ public class Graph implements Serializable {
 		return this.indirectInfluence;
 	}
 	
-
 	public String getKeyPlayer() {
 		return indirectInfluence.getNameVertexByIndex(0);
 	}
 	
-
 	public List<String> getSmallestGroup() {
 		long lOrgSize = countVertex();
 		
@@ -396,7 +286,6 @@ public class Graph implements Serializable {
 		return result;
 	}
 	
-
 	public void getCombinations(int k) {
 		long n = countVertex();
 		int a[] = new int[((int)n + 1)];
@@ -449,13 +338,13 @@ public class Graph implements Serializable {
 		} while (i != 0 && result == null);
 	}
 	
-	
-	/*@Override
+	@Override
 	public String toString(){
-		vertices.cache();
-		edges.cache();
+		//vertices.cache();
+		//edges.cache();
 		String sResult = new String("Vertices:\n");
-		for (Vertex vertex : vertices.collect()) {
+		List<Vertex> listVertex = vertices.collect();
+		for (Vertex vertex : listVertex) {
 			sResult += "Name:" + vertex.getName() + "\n";
 			sResult += "SpreadCoefficiency: {\n";
 			Map<String, BigDecimal> msc = vertex.getSpreadCoefficient().collectAsMap();
@@ -465,9 +354,10 @@ public class Graph implements Serializable {
 			sResult += "\n}";
 		}
 		sResult += "\nEdges:\n";
-		for (Edge edge : edges.collect()) {
+		List<Edge> listEdge = edges.collect();	
+		for (Edge edge : listEdge) {
 			sResult += "Start: " + edge.getStartVertexName() + ", End: " + edge.getEndVertexName() + ", DirectInfluence: " + edge.getDirectInfluence().toString() + "\n";
 		}
 		return sResult;
-	}*/
+	}
 }

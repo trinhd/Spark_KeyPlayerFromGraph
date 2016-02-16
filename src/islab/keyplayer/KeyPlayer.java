@@ -26,15 +26,13 @@ public class KeyPlayer {
 		long lStart = System.currentTimeMillis();
 		Graph g = new Graph();
 		
-		JavaRDD<String> dataFile = sc.textFile("./graph_data/graph_oneline_20160215.json");
+		JavaRDD<String> dataFile = sc.textFile("./graph_data/graph_oneline.json");
 		//dataFile.cache();
-		//System.out.println("--------------------------------->>>>>>Nội dung File: " + dataFile.first());
 		JavaRDD<Graph> gRDD = dataFile.map(new Data());
 		//gRDD.saveAsTextFile("AAAAAA");
-		//System.out.println("--------------------------------->>>>>>Số Đồ thị đọc từ File: " + gRDD.count());
 		gRDD.cache();
 		g = gRDD.first();
-		//System.out.println("--------------------------------->>>>>>" + g.toString());
+		System.out.println("--------------------------------->>>>>>" + g.toString());
 		JavaRDD<List<String>> s = g.getAllPathBetweenTwoVertex("1", "18");
 		s.cache();
 		System.out.println("--------------------------------->>>>>>Số đường đi: " + s.count());

@@ -76,7 +76,7 @@ public class Data implements Function<String, Graph> {
 				public Tuple2<String, BigDecimal> call(String arg0) throws Exception {
 					// TODO Auto-generated method stub
 					String[] str = arg0.split(":");
-					System.out.println("--------------------------------->>>>>>str[0]: " + str[0].substring(1, str[0].length() - 1));
+					//System.out.println("--------------------------------->>>>>>str[0]: " + str[0].substring(1, str[0].length() - 1));
 					return new Tuple2<String, BigDecimal>(str[0].substring(1, str[0].length() - 1), new BigDecimal(str[1]));
 				}
 			};
@@ -90,18 +90,10 @@ public class Data implements Function<String, Graph> {
 					JavaPairRDD<String, BigDecimal> mSpreadCoefficient = null;
 					if (joSpreadCoefficient != null && !joSpreadCoefficient.isJsonNull()) {
 						String strTemp = joSpreadCoefficient.toString();
-						System.out.println("--------------------------------->>>>>>joSpreadCoefficient: " + strTemp);
+						//System.out.println("--------------------------------->>>>>>joSpreadCoefficient: " + strTemp);
 						strTemp = strTemp.substring(1, strTemp.length() - 1);
-						strTemp = strTemp.replace(',', '\n');
-						System.out.println("--------------------------------->>>>>>joSpreadCoefficient Fix: " + strTemp);
-						
-						/*writeJsonFile(strTemp, "Temp.tri");
-						mSpreadCoefficient = KeyPlayer.sc.textFile("Temp.tri").mapToPair(pairfunc);
-						mSpreadCoefficient.cache();
-						File f = new File("Temp.tri");
-						f.delete();*/
-						
-						JavaRDD<String> rddString = KeyPlayer.sc.parallelize(Arrays.asList(strTemp));
+												
+						JavaRDD<String> rddString = KeyPlayer.sc.parallelize(Arrays.asList(strTemp.split(",")));
 						mSpreadCoefficient = rddString.mapToPair(pairfunc);
 						mSpreadCoefficient.cache();
 						
@@ -130,13 +122,13 @@ public class Data implements Function<String, Graph> {
 			System.out.println("DuyTri");
 			System.out.println(
 					"-----------------------------------------------------------------------------------------");
-			//System.out.println(e); // TODO: handle error
-			e.printStackTrace();
+			System.out.println(e); // TODO: handle error
+			//e.printStackTrace();
 			System.out.println(
 					"-----------------------------------------------------------------------------------------");
 		}
 		
-		//System.out.println("--------------------------------->>>>>>" + g.countVertex());
+		System.out.println("--------------------------------->>>>>>Số đỉnh đồ thị là: " + g.countVertex());
 		return g;
 	}
 
