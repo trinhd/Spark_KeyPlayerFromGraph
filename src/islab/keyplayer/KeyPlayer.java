@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.SparkConf;
@@ -26,10 +27,11 @@ public class KeyPlayer {
 		Graph g = new Graph();
 		
 		JavaRDD<String> dataFile = sc.textFile("./graph_data/graph_oneline_20160215.json");
-		dataFile.cache();
-		//System.out.println(dataFile.first());
+		//dataFile.cache();
+		//System.out.println("--------------------------------->>>>>>Nội dung File: " + dataFile.first());
 		JavaRDD<Graph> gRDD = dataFile.map(new Data());
 		//gRDD.saveAsTextFile("AAAAAA");
+		//System.out.println("--------------------------------->>>>>>Số Đồ thị đọc từ File: " + gRDD.count());
 		gRDD.cache();
 		g = gRDD.first();
 		//System.out.println("--------------------------------->>>>>>" + g.toString());

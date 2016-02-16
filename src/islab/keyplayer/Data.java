@@ -122,7 +122,8 @@ public class Data implements Function<String, Graph> {
 			System.out.println("DuyTri");
 			System.out.println(
 					"-----------------------------------------------------------------------------------------");
-			System.out.println(e); // TODO: handle error
+			//System.out.println(e); // TODO: handle error
+			e.printStackTrace();
 			System.out.println(
 					"-----------------------------------------------------------------------------------------");
 		}
