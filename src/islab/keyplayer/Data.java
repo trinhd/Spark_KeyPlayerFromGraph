@@ -1,14 +1,9 @@
 package islab.keyplayer;
 
-import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Writer;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -20,7 +15,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 
 import scala.Tuple2;
 
@@ -30,8 +24,7 @@ public class Data implements Function<String, Graph> {
 	public static int iN;//số phần tử trong tập ban đầu cần xét, sẽ cắt giảm nếu các phần tử sau không thỏa.
 	public static int iNeed = 15;//ngưỡng số đỉnh chịu sức ảnh hưởng vượt ngưỡng theta ở trên của một hoặc nhóm đỉnh trong đồ thị.
 	public static boolean flagSorted = false;// cờ đánh dấu đã sắp xếp mảng hay chưa. 
-	private FileReader fr = null;
-
+	
 	public void writeJsonFile(String sFileContent, String sPath) {
 		try {
 			Writer writer = new FileWriter(sPath);
@@ -70,15 +63,11 @@ public class Data implements Function<String, Graph> {
 			/*Type typeSpreadCoefficient = new TypeToken<HashMap<String, BigDecimal>>() {
 			}.getType();*/
 			
-			PairFunction<String, String, BigDecimal> pairfunc = new PairFunction<String, String, BigDecimal>() {
-				
-				@Override
-				public Tuple2<String, BigDecimal> call(String arg0) throws Exception {
-					// TODO Auto-generated method stub
-					String[] str = arg0.split(":");
-					//System.out.println("--------------------------------->>>>>>str[0]: " + str[0].substring(1, str[0].length() - 1));
-					return new Tuple2<String, BigDecimal>(str[0].substring(1, str[0].length() - 1), new BigDecimal(str[1]));
-				}
+			PairFunction<String, String, BigDecimal> pairfunc = arg0 -> {
+				// TODO Auto-generated method stub
+				String[] str = arg0.split(":");
+				//System.out.println("--------------------------------->>>>>>str[0]: " + str[0].substring(1, str[0].length() - 1));
+				return new Tuple2<String, BigDecimal>(str[0].substring(1, str[0].length() - 1), new BigDecimal(str[1]));
 			};
 
 			if (jaVertices != null) {

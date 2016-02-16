@@ -338,7 +338,7 @@ public class Graph implements Serializable {
 		} while (i != 0 && result == null);
 	}
 	
-	@Override
+	/*@Override
 	public String toString(){
 		//vertices.cache();
 		//edges.cache();
@@ -359,5 +359,5 @@ public class Graph implements Serializable {
 			sResult += "Start: " + edge.getStartVertexName() + ", End: " + edge.getEndVertexName() + ", DirectInfluence: " + edge.getDirectInfluence().toString() + "\n";
 		}
 		return sResult;
-	}
+	}*/
 }
