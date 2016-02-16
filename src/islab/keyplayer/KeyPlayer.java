@@ -22,12 +22,16 @@ public class KeyPlayer {
 		long lStart = System.currentTimeMillis();
 		Graph g = new Graph();
 		
-		JavaRDD<String> dataFile = sc.textFile("./graph_data/graph_oneline.json");
+		/*JavaRDD<String> dataFile = sc.textFile("./graph_data/graph_oneline.json");
 		//dataFile.cache();
 		JavaRDD<Graph> gRDD = dataFile.map(new Data());
 		//gRDD.saveAsTextFile("AAAAAA");
 		gRDD.cache();
-		g = gRDD.first();
+		g = gRDD.first();*/
+		
+		Data data = new Data();
+		g = data.createGraphFromJSONFile("./graph_data/graph_oneline.json");
+		
 		System.out.println("--------------------------------->>>>>>" + g.toString());
 		JavaRDD<List<String>> s = g.getAllPathBetweenTwoVertex("1", "18");
 		s.cache();
