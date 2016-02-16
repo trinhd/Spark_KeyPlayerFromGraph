@@ -6,10 +6,12 @@ import java.io.FileWriter;
 import java.io.Writer;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 
@@ -92,11 +94,17 @@ public class Data implements Function<String, Graph> {
 						strTemp = strTemp.substring(1, strTemp.length() - 1);
 						strTemp = strTemp.replace(',', '\n');
 						System.out.println("--------------------------------->>>>>>joSpreadCoefficient Fix: " + strTemp);
-						writeJsonFile(strTemp, "Temp.tri");
+						
+						/*writeJsonFile(strTemp, "Temp.tri");
 						mSpreadCoefficient = KeyPlayer.sc.textFile("Temp.tri").mapToPair(pairfunc);
 						mSpreadCoefficient.cache();
 						File f = new File("Temp.tri");
-						f.delete();
+						f.delete();*/
+						
+						JavaRDD<String> rddString = KeyPlayer.sc.parallelize(Arrays.asList(strTemp));
+						mSpreadCoefficient = rddString.mapToPair(pairfunc);
+						mSpreadCoefficient.cache();
+						
 						if (mSpreadCoefficient != null && !mSpreadCoefficient.isEmpty()) {
 							vertex = new Vertex(sName, mSpreadCoefficient);
 						} else {

@@ -30,7 +30,12 @@ public class IndirectInfluence implements Serializable {
 		Tuple2<String, JavaRDD<String>> oneVertex = new Tuple2<String, JavaRDD<String>>(vName, listVertex);
 		List<Tuple2<String, JavaRDD<String>>> list = new ArrayList<Tuple2<String, JavaRDD<String>>>();
 		list.add(oneVertex);
-		this.mOverThresholdInfluenceVertices = this.mOverThresholdInfluenceVertices.union(KeyPlayer.sc.parallelizePairs(list));
+		if (this.mOverThresholdInfluenceVertices != null) {
+			this.mOverThresholdInfluenceVertices = this.mOverThresholdInfluenceVertices
+					.union(KeyPlayer.sc.parallelizePairs(list));
+		} else {
+			this.mOverThresholdInfluenceVertices = KeyPlayer.sc.parallelizePairs(list);
+		}
 	}
 	
 	public long lCount(){

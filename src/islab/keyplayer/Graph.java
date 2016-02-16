@@ -29,8 +29,8 @@ public class Graph implements Serializable {
 	private long lCount;//đếm số lượng tổ hợp phải duyệt qua
 
 	public Graph() {
-		this.vertices = null;
-		this.edges = null;
+		this.vertices = KeyPlayer.sc.emptyRDD();
+		this.edges = KeyPlayer.sc.emptyRDD();
 		this.indirectInfluence = new IndirectInfluence();
 		this.result = null;
 		this.lCount = 0;
