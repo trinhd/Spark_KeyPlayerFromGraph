@@ -1,5 +1,6 @@
 package islab.keyplayer;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Writer;
@@ -64,15 +65,16 @@ public class Data implements Function<String, Graph> {
 
 			// Tao mot dai dien cho kieu Map<String, BigDecimal> de deserialize
 			// nhan dien
-			Type typeSpreadCoefficient = new TypeToken<HashMap<String, BigDecimal>>() {
-			}.getType();
+			/*Type typeSpreadCoefficient = new TypeToken<HashMap<String, BigDecimal>>() {
+			}.getType();*/
 			
 			PairFunction<String, String, BigDecimal> pairfunc = new PairFunction<String, String, BigDecimal>() {
 				
 				@Override
 				public Tuple2<String, BigDecimal> call(String arg0) throws Exception {
 					// TODO Auto-generated method stub
-					return null;
+					String[] str = arg0.split(":");
+					return new Tuple2<String, BigDecimal>(str[0].substring(1, str[0].length() - 1), new BigDecimal(str[1]));
 				}
 			};
 
@@ -84,7 +86,13 @@ public class Data implements Function<String, Graph> {
 					Vertex vertex = null;
 					JavaPairRDD<String, BigDecimal> mSpreadCoefficient = null;
 					if (joSpreadCoefficient != null) {
-						mSpreadCoefficient.
+						String strTemp = joSpreadCoefficient.toString();
+						strTemp = strTemp.substring(1, strTemp.length() - 1);
+						strTemp = strTemp.replace(',', '\n');
+						writeJsonFile(strTemp, "Temp.tri");
+						mSpreadCoefficient = KeyPlayer.sc.textFile("Temp.tri").mapToPair(pairfunc);
+						File f = new File("Temp.tri");
+						f.delete();
 						if (mSpreadCoefficient != null) {
 							vertex = new Vertex(sName, mSpreadCoefficient);
 						} else {

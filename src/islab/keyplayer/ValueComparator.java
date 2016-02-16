@@ -1,21 +1,20 @@
 package islab.keyplayer;
 
 import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
 
-public class ValueComparator implements Comparator<String> {
-    Map<String, List<String>> base;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.Function;
 
-    public ValueComparator(Map<String, List<String>> base) {
-        this.base = base;
-    }
+import scala.Tuple2;
 
+public class ValueComparator implements Comparator<JavaRDD<String>> {
+	
 	@Override
-	public int compare(String o1, String o2) {
+	public int compare(JavaRDD<String> o1, JavaRDD<String> o2) {
 		// TODO Auto-generated method stub
-		int i1 = base.get(o1).size();
-		int i2 = base.get(o2).size();
-		return i1 >= i2 ? -1 : 1;
+		long l1 = o1.count();
+		long l2 = o2.count();
+		return l1 >= l2 ? -1 : 1;
 	}
 }

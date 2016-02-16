@@ -4,18 +4,13 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.Map;
 
-public class ValueComparator2 implements Comparator<String> {
-	Map<String, BigDecimal> base;
+import org.apache.spark.api.java.JavaRDD;
 
-    public ValueComparator2(Map<String, BigDecimal> base) {
-        this.base = base;
-    }
-
+public class ValueComparator2 implements Comparator<BigDecimal> {
+	
 	@Override
-	public int compare(String o1, String o2) {
+	public int compare(BigDecimal o1, BigDecimal o2) {
 		// TODO Auto-generated method stub
-		BigDecimal i1 = base.get(o1);
-		BigDecimal i2 = base.get(o2);
-		return (i1.compareTo(i2) == -1) ? 1 : -1;
+		return (o1.compareTo(o2));
 	}
 }
