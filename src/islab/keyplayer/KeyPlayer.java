@@ -56,7 +56,10 @@ public class KeyPlayer {
 		
 		JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices();
 		
-		System.out.println("--------------------------------->>>>>>Sức ảnh hưởng của tất cả các đỉnh:\n" + all.toString());
+		System.out.println("--------------------------------->>>>>>Sức ảnh hưởng của tất cả các đỉnh:");// + all.toString());
+		all.foreach(tuple -> {
+			System.out.println("[ " + tuple._1 + " : " + tuple._2 + " ]");
+		});
 		
 		JavaPairRDD<String, List<String>> inif = u.getIndirectInfluence();
 		System.out.println("--------------------------------->>>>>>Sức ảnh hưởng vượt ngưỡng của tất cả các đỉnh:");// + inif.toString());

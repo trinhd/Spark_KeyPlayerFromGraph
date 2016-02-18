@@ -4,11 +4,18 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.spark.Accumulable;
+import org.apache.spark.Accumulator;
+import org.apache.spark.AccumulatorParam;
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 
 import scala.Tuple2;
@@ -166,46 +173,114 @@ public class Utils implements Serializable{
 
 		//return ((result != null) && (!result.isEmpty())) ? KeyPlayer.sc.parallelize(result) : null;
 	}
+	
+	public class BigDecimalAccumulatorParam implements AccumulatorParam<BigDecimal> {
+
+		@Override
+		public BigDecimal addInPlace(BigDecimal arg0, BigDecimal arg1) {
+			// TODO Auto-generated method stub
+			BigDecimal res = arg0.add(arg1);
+			return res;
+		}
+
+		@Override
+		public BigDecimal zero(BigDecimal arg0) {
+			// TODO Auto-generated method stub
+			return BigDecimal.ZERO;
+		}
+
+		@Override
+		public BigDecimal addAccumulator(BigDecimal arg0, BigDecimal arg1) {
+			// TODO Auto-generated method stub
+			BigDecimal res = arg0.add(arg1);
+			return res;
+		}
+		
+	}
 
 	public BigDecimal IndirectInfluenceOfVertexOnOtherVertex(String sStartName, String sEndName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
 		//JavaRDD<Vertex> vertices = bcGraph.getValue().getVertices();
 		//JavaRDD<Edge> edges = bcGraph.getValue().getEdges();
+		
+		JavaRDD<List<String>> rddAllPath = getAllPathBetweenTwoVertex(sStartName, sEndName);
+		
+		if (rddAllPath != null) {
 
-		JavaRDD<List<String>> allpath = getAllPathBetweenTwoVertex(sStartName, sEndName);
-		if (allpath != null) {
-			JavaRDD<BigDecimal> rddResult = allpath.map(path -> {
-				BigDecimal bdResult = BigDecimal.ZERO;
-				String sBefore = null;
-				for (String v : path) {
-					if (sBefore != null) {
-						bdResult = bdResult.add(getVertexSpreadCoefficientFromName(v, sBefore)
-								.multiply(getEdgeDirectInfluenceFromStartEndVertex(sBefore, v)));
-						if (bdResult.doubleValue() >= 1.0) {
-							return BigDecimal.ONE;
+			List<List<String>> allpath = rddAllPath.collect();
+			if (allpath != null) {
+				/*
+				 * CÁCH 1 - FAIL JavaRDD<BigDecimal> rddResult =
+				 * allpath.map(path -> { BigDecimal bdResult = BigDecimal.ZERO;
+				 * String sBefore = null; for (String v : path) { if (sBefore !=
+				 * null) { bdResult =
+				 * bdResult.add(getVertexSpreadCoefficientFromName(v, sBefore)
+				 * .multiply(getEdgeDirectInfluenceFromStartEndVertex(sBefore,
+				 * v))); if (bdResult.doubleValue() >= 1.0) { return
+				 * BigDecimal.ONE; } } sBefore = v; }
+				 * 
+				 * return bdResult; }); //rddResult.foreach(arg0 ->
+				 * System.out.println(arg0));
+				 * System.out.println(rddResult.toDebugString());
+				 * //KeyPlayer.sc.cancelAllJobs(); fIndirectInfluence =
+				 * rddResult.reduce((arg0, arg1) -> { // TODO Auto-generated
+				 * method stub BigDecimal res = arg0.add(arg1); return res; });
+				 * 
+				 * if (fIndirectInfluence.compareTo(BigDecimal.ONE) == 1){
+				 * fIndirectInfluence = BigDecimal.ONE; }
+				 */
+
+				/*
+				 * CÁCH 2 - FAIL final Accumulator<BigDecimal> accResult =
+				 * KeyPlayer.sc.accumulator(BigDecimal.ZERO, new
+				 * BigDecimalAccumulatorParam()); allpath.foreach(path -> {
+				 * String sBefore = null; for (String v : path) { if (sBefore !=
+				 * null) { accResult.add(getVertexSpreadCoefficientFromName(v,
+				 * sBefore)
+				 * .multiply(getEdgeDirectInfluenceFromStartEndVertex(sBefore,
+				 * v))); } sBefore = v; } }); fIndirectInfluence =
+				 * accResult.value(); if
+				 * (fIndirectInfluence.compareTo(BigDecimal.ONE) == 1) {
+				 * fIndirectInfluence = BigDecimal.ONE; }
+				 */
+
+				/*
+				 * CÁCH 3 - FAIL JavaPairRDD<BigDecimal, BigDecimal> pairRes =
+				 * allpath.flatMapToPair(path -> { String sBefore = null;
+				 * List<Tuple2<BigDecimal, BigDecimal>> iteRes = new
+				 * ArrayList<Tuple2<BigDecimal,BigDecimal>>(); for (String v :
+				 * path) { if (sBefore != null) { iteRes.add(new
+				 * Tuple2<BigDecimal,
+				 * BigDecimal>(getVertexSpreadCoefficientFromName(v, sBefore),
+				 * getEdgeDirectInfluenceFromStartEndVertex(sBefore, v))); }
+				 * sBefore = v; } return iteRes; });
+				 * 
+				 * fIndirectInfluence = pairRes.map(arg0 ->
+				 * arg0._1.multiply(arg0._2)).reduce((tri0, tri1) ->
+				 * tri0.add(tri1)); if
+				 * (fIndirectInfluence.compareTo(BigDecimal.ONE) == 1) {
+				 * fIndirectInfluence = BigDecimal.ONE; }
+				 */
+
+				for (List<String> path : allpath) {
+					String sBefore = null;
+					for (String v : path) {
+						if (sBefore != null) {
+							fIndirectInfluence = fIndirectInfluence.add(getVertexSpreadCoefficientFromName(v, sBefore)
+									.multiply(getEdgeDirectInfluenceFromStartEndVertex(sBefore, v)));
+							if (fIndirectInfluence.doubleValue() >= 1.0) {
+								return BigDecimal.ONE;
+							}
 						}
+						sBefore = v;
 					}
-					sBefore = v;
 				}
-				
-				return bdResult;
-			});
-			//rddResult.foreach(arg0 -> System.out.println(arg0));
-			System.out.println(rddResult.toDebugString());
-			//KeyPlayer.sc.cancelAllJobs();
-			fIndirectInfluence = rddResult.reduce((arg0, arg1) -> {
-				// TODO Auto-generated method stub
-				BigDecimal res = arg0.add(arg1);
-				return res;
-			});
-			
-			if (fIndirectInfluence.compareTo(BigDecimal.ONE) == 1){
-				fIndirectInfluence = BigDecimal.ONE;
 			}
 		}
 
 		return fIndirectInfluence;
 	}
+	
 
 	private BigDecimal IndirectInfluenceOfVertexOnAllVertex(String sVertexName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
@@ -233,32 +308,33 @@ public class Utils implements Serializable{
 	}
 
 	public JavaPairRDD<String, BigDecimal> getAllInfluenceOfVertices() {
-		JavaPairRDD<String, BigDecimal> mUnsortedAll = null;
-		JavaRDD<Vertex> vertices = bcVertices.value();
+		List<Tuple2<String, BigDecimal>> mUnsortedAll = new ArrayList<Tuple2<String, BigDecimal>>();
+		List<Vertex> vertices = bcVertices.value().collect();
 
-		/*for (Vertex vertex : vertices) {
+		for (Vertex vertex : vertices) {
 			String vName = vertex.getName();
-			mUnsortedAll.put(vName, IndirectInfluenceOfVertexOnAllVertex(vName));
-		}*/
+			mUnsortedAll.add(new Tuple2<String, BigDecimal>(vName, IndirectInfluenceOfVertexOnAllVertex(vName)));
+		}
 		
-		mUnsortedAll = vertices.mapToPair(vertex -> {
+		/*mUnsortedAll = vertices.mapToPair(vertex -> {
 			String vName = vertex.getName();
 			return new Tuple2<String, BigDecimal>(vName, IndirectInfluenceOfVertexOnAllVertex(vName));
-		});
+		});*/
 
 		/*Map<String, BigDecimal> mSortedAll = new TreeMap<String, BigDecimal>(new ValueComparator2(mUnsortedAll));
 		mSortedAll.putAll(mUnsortedAll);*/
 		/*mUnsortedAll.entrySet().stream().sorted(Map.Entry.comparingByValue())
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));*/
 		
-		JavaPairRDD<BigDecimal, String> mSortedAll = mUnsortedAll.mapToPair(t -> t.swap());
+		JavaPairRDD<BigDecimal, String> mSortedAll = KeyPlayer.sc.parallelizePairs(mUnsortedAll).mapToPair(t -> t.swap());
 		
 		mSortedAll.sortByKey(new ValueComparator2());
 		
-		mUnsortedAll = mSortedAll.mapToPair(t -> t.swap());
+		return mSortedAll.mapToPair(t -> t.swap());
 
-		return mUnsortedAll;
+		//return mUnsortedAll;
 	}
+	
 
 	public JavaPairRDD<String, List<String>> getIndirectInfluence() {
 		if (this.indirectInfluence.count() > 1 && !Data.flagSorted){
