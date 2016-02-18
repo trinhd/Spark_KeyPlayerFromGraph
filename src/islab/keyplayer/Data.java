@@ -17,6 +17,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.broadcast.Broadcast;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -30,10 +31,10 @@ import com.google.gson.stream.JsonReader;
 import scala.Tuple2;
 
 public class Data {//implements Function<String, Graph> {
-	public static BigDecimal theta = new BigDecimal("0.3");// ngưỡng sức ảnh hưởng
+	public static Broadcast<BigDecimal> theta = KeyPlayer.sc.broadcast(new BigDecimal("0.3"));// ngưỡng sức ảnh hưởng
 	public static int iK;//số phần tử trong tổ hợp, tăng dần để tìm cụm nhỏ nhất thỏa điều kiện.
 	public static int iN;//số phần tử trong tập ban đầu cần xét, sẽ cắt giảm nếu các phần tử sau không thỏa.
-	public static int iNeed = 15;//ngưỡng số đỉnh chịu sức ảnh hưởng vượt ngưỡng theta ở trên của một hoặc nhóm đỉnh trong đồ thị.
+	public static Broadcast<Integer> iNeed = KeyPlayer.sc.broadcast(15);//ngưỡng số đỉnh chịu sức ảnh hưởng vượt ngưỡng theta ở trên của một hoặc nhóm đỉnh trong đồ thị.
 	public static boolean flagSorted = false;// cờ đánh dấu đã sắp xếp mảng hay chưa. 
 	private FileReader fr = null;
 
@@ -86,7 +87,6 @@ public class Data {//implements Function<String, Graph> {
 	}
 	
 	public Graph createGraphFromJSONFile(String sPath) {
-		//System.out.println(sContent);
 		Graph g = new Graph();
 		Gson gson = new Gson();
 
@@ -107,10 +107,8 @@ public class Data {//implements Function<String, Graph> {
 
 			// Tao mot dai dien cho kieu Map<String, BigDecimal> de deserialize
 			// nhan dien
-			//Type typeSpreadCoefficient = new TypeToken<HashMap<String, BigDecimal>>() {
-			//}.getType();
-			
-			//PairFunction<String, String, BigDecimal> pairfunc = ;
+			Type typeSpreadCoefficient = new TypeToken<HashMap<String, BigDecimal>>() {
+			}.getType();
 
 			if (jaVertices != null) {
 				for (JsonElement jeVertex : jaVertices) {
@@ -118,37 +116,10 @@ public class Data {//implements Function<String, Graph> {
 					String sName = joVertex.get("Name").getAsString();
 					JsonObject joSpreadCoefficient = joVertex.getAsJsonObject("SpreadCoefficient");
 					Vertex vertex = null;
-					JavaPairRDD<String, BigDecimal> mSpreadCoefficient = null;
-					if (joSpreadCoefficient != null && !joSpreadCoefficient.isJsonNull()) {
-						String strTemp = joSpreadCoefficient.toString();
-						strTemp = strTemp.substring(1, strTemp.length() - 1);
-						System.out.println("--------------------------------->>>>>>joSpreadCoefficient: " + strTemp);
-												
-						/*JavaRDD<String> rddString = KeyPlayer.sc.parallelize(Arrays.asList(strTemp.split(",")));
-						rddString.cache();
-						//rddString.foreach(arg0 -> System.out.println("--------------------------------->>>>>>rddString: " + arg0));
-						//System.out.println("--------------------------------->>>>>>rddString: " + rddString);
-						mSpreadCoefficient = rddString.mapToPair(arg0 -> {
-							// TODO Auto-generated method stub
-							System.out.println("--------------------------------->>>>>>rddString: " + arg0);
-							String[] str = arg0.split(":");
-							System.out.println("--------------------------------->>>>>>str[0]: " + str[0].substring(1, str[0].length() - 1));
-							System.out.println("--------------------------------->>>>>>str[1]: " + str[1]);
-							return new Tuple2<String, BigDecimal>(str[0].substring(1, str[0].length() - 1), new BigDecimal(str[1]));
-						});*/
-						
-						String[] strSplitted = strTemp.split(",");
-						List<Tuple2<String, BigDecimal>> listTuple = new ArrayList<Tuple2<String, BigDecimal>>();
-						for (String string : strSplitted) {
-							String[] str = string.split(":");
-							listTuple.add(new Tuple2<String, BigDecimal>(str[0].substring(1, str[0].length() - 1), new BigDecimal(str[1])));
-						}
-						mSpreadCoefficient = KeyPlayer.sc.parallelizePairs(listTuple);
-						mSpreadCoefficient.cache();
-						
-						//mSpreadCoefficient.foreach(arg0 -> System.out.println("--------------------------------->>>>>>SPCO: " + arg0._1 + " : " + arg0._2.toString()));
-						
-						if (mSpreadCoefficient != null && !mSpreadCoefficient.isEmpty()) {
+					Map<String, BigDecimal> mSpreadCoefficient = null;
+					if (joSpreadCoefficient != null) {
+						mSpreadCoefficient = gson.fromJson(joSpreadCoefficient, typeSpreadCoefficient);
+						if (mSpreadCoefficient != null) {
 							vertex = new Vertex(sName, mSpreadCoefficient);
 						} else {
 							vertex = new Vertex(sName);
@@ -167,18 +138,16 @@ public class Data {//implements Function<String, Graph> {
 					g.addEdge(edge);
 				}
 			}
-			
+
+			closeJsonFile();
 		} catch (Exception e) {
 			System.out.println("ERROR");
-			System.out.println("DuyTri");
 			System.out.println(
 					"-----------------------------------------------------------------------------------------");
 			System.out.println(e); // TODO: handle error
-			//e.printStackTrace();
 			System.out.println(
 					"-----------------------------------------------------------------------------------------");
 		}
-		
 		System.out.println("--------------------------------->>>>>>Số đỉnh đồ thị là: " + g.countVertex());
 		return g;
 	}

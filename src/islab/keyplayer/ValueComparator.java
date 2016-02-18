@@ -1,16 +1,15 @@
 package islab.keyplayer;
 
 import java.util.Comparator;
+import java.util.List;
 
-import org.apache.spark.api.java.JavaRDD;
-
-public class ValueComparator implements Comparator<JavaRDD<String>> {
+public class ValueComparator implements Comparator<List<String>> {
 	
 	@Override
-	public int compare(JavaRDD<String> o1, JavaRDD<String> o2) {
+	public int compare(List<String> o1, List<String> o2) {
 		// TODO Auto-generated method stub
-		long l1 = o1.count();
-		long l2 = o2.count();
-		return l1 >= l2 ? -1 : 1;
+		int i1 = o1.size();
+		int i2 = o2.size();
+		return i1 >= i2 ? -1 : 1;
 	}
 }
