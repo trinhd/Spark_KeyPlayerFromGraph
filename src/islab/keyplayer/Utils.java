@@ -155,6 +155,9 @@ public class Utils implements Serializable{
 								temp.remove(temp.size() - 1);
 								explored.remove(explored.size() - 1);
 								iCandidate.remove(iCandidate.size() - 1);
+								if (iCandidate.isEmpty()){
+									break;
+								}
 							}
 						}
 					}
