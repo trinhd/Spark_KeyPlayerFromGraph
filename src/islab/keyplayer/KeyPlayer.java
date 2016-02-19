@@ -15,7 +15,7 @@ import org.apache.spark.broadcast.Broadcast;
 import scala.Tuple2;
 
 public class KeyPlayer {
-	public static SparkConf conf = new SparkConf().setAppName("KeyPlayer").setMaster("local[*]");
+	public static SparkConf conf = new SparkConf().setAppName("KeyPlayer");
 	public static JavaSparkContext sc = new JavaSparkContext(conf);
 	
 	public static void main(String[] args) {
