@@ -48,7 +48,8 @@ public class KeyPlayer {
 		//JavaRDD<Edge> edges = g.getEdges();
 		
 		System.out.println("--------------------------------->>>>>>" + u.GraphToString());
-		JavaRDD<List<String>> s = u.getAllPathBetweenTwoVertex("1", "18");
+		/*
+		 * JavaRDD<List<String>> s = u.getAllPathBetweenTwoVertex("1", "18");
 		s.cache();
 		System.out.println("--------------------------------->>>>>>Số đường đi: " + s.count());
 		System.out.println("--------------------------------->>>>>>");// + s.toString());
@@ -57,7 +58,7 @@ public class KeyPlayer {
 		});
 		
 		System.out.println("--------------------------------->>>>>>Sức ảnh hưởng gián tiếp giữa 2 đỉnh là: " + u.IndirectInfluenceOfVertexOnOtherVertex("1", "18"));
-		
+		*/
 		JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices();
 		
 		System.out.println("--------------------------------->>>>>>Sức ảnh hưởng của tất cả các đỉnh:");// + all.toString());

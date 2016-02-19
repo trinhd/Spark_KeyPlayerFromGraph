@@ -114,51 +114,56 @@ public class Utils implements Serializable{
 		temp.add(sStart); // tham S
 		explored.add(sStart); // danh dau S da tham
 		JavaRDD<String> rddTemp = getVerticesPointedByVertex(sStart);
-		List<String> listCandidate = new ArrayList<String>();
-		cloneStringList(rddTemp.collect(), listCandidate);
-		List<Integer> iCandidate = new ArrayList<Integer>();
-		iCandidate.add(listCandidate.size());
+		rddTemp.cache();
+		if (rddTemp != null && !rddTemp.isEmpty()) {
+			List<String> listCandidate = new ArrayList<String>();
+			cloneStringList(rddTemp.collect(), listCandidate);
+			List<Integer> iCandidate = new ArrayList<Integer>();
+			iCandidate.add(listCandidate.size());
 
-		while (!listCandidate.isEmpty()) {
-			int iCount = listCandidate.size();
-			String sCandidate = listCandidate.remove(iCount - 1);
-			int iLast = iCandidate.size() - 1;
-			iCandidate.set(iLast, iCandidate.get(iLast) - 1);
-			if (!explored.contains(sCandidate)) {
-				temp.add(sCandidate);
-				explored.add(sCandidate);
-				if (sCandidate.equals(sEnd)) {
-					result.add((List<String>)(((ArrayList<String>)(temp)).clone()));
-					/*List<List<String>> temp2 = new ArrayList<List<String>>();
-					temp2.add(temp);
-					result = result.union(KeyPlayer.sc.parallelize(temp2));*/
-					explored.remove(sCandidate);
-					temp.remove(sCandidate);
+			while (!listCandidate.isEmpty()) {
+				int iCount = listCandidate.size();
+				String sCandidate = listCandidate.remove(iCount - 1);
+				int iLast = iCandidate.size() - 1;
+				iCandidate.set(iLast, iCandidate.get(iLast) - 1);
+				if (!explored.contains(sCandidate)) {
+					temp.add(sCandidate);
+					explored.add(sCandidate);
+					if (sCandidate.equals(sEnd)) {
+						result.add((List<String>) (((ArrayList<String>) (temp)).clone()));
+						/*
+						 * List<List<String>> temp2 = new
+						 * ArrayList<List<String>>(); temp2.add(temp); result =
+						 * result.union(KeyPlayer.sc.parallelize(temp2));
+						 */
+						explored.remove(sCandidate);
+						temp.remove(sCandidate);
+						while (!iCandidate.isEmpty() && iCandidate.get(iCandidate.size() - 1) == 0) {
+							temp.remove(temp.size() - 1);
+							explored.remove(explored.size() - 1);
+							iCandidate.remove(iCandidate.size() - 1);
+						}
+					} else {
+						List<String> listNewCandidate = getVerticesPointedByVertex(sCandidate).collect();
+						if (listNewCandidate != null && !listNewCandidate.isEmpty()) {
+							listCandidate.addAll(listNewCandidate);
+							iCandidate.add(listNewCandidate.size());
+						} else {
+							temp.remove(sCandidate);
+							explored.remove(sCandidate);
+							while (iCandidate.get(iCandidate.size() - 1) == 0) {
+								temp.remove(temp.size() - 1);
+								explored.remove(explored.size() - 1);
+								iCandidate.remove(iCandidate.size() - 1);
+							}
+						}
+					}
+				} else {
 					while (!iCandidate.isEmpty() && iCandidate.get(iCandidate.size() - 1) == 0) {
 						temp.remove(temp.size() - 1);
 						explored.remove(explored.size() - 1);
 						iCandidate.remove(iCandidate.size() - 1);
 					}
-				} else {
-					List<String> listNewCandidate = getVerticesPointedByVertex(sCandidate).collect();
-					if (listNewCandidate != null && !listNewCandidate.isEmpty()) {
-						listCandidate.addAll(listNewCandidate);
-						iCandidate.add(listNewCandidate.size());
-					} else {
-						temp.remove(sCandidate);
-						explored.remove(sCandidate);
-						while (iCandidate.get(iCandidate.size() - 1) == 0) {
-							temp.remove(temp.size() - 1);
-							explored.remove(explored.size() - 1);
-							iCandidate.remove(iCandidate.size() - 1);
-						}
-					}
-				}
-			} else {
-				while (!iCandidate.isEmpty() && iCandidate.get(iCandidate.size() - 1) == 0) {
-					temp.remove(temp.size() - 1);
-					explored.remove(explored.size() - 1);
-					iCandidate.remove(iCandidate.size() - 1);
 				}
 			}
 		}
