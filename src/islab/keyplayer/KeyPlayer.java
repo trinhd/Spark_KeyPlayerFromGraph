@@ -23,6 +23,10 @@ public class KeyPlayer {
 		Data.theta = KeyPlayer.sc.broadcast(new BigDecimal(args[0]));
 		System.out.println("--------------------------------->>>>>>Ngưỡng số đỉnh chịu sức ảnh hưởng là: " + args[1]);
 		Data.iNeed = KeyPlayer.sc.broadcast(Integer.parseInt(args[1]));
+		String sInputPath = "./graph_data/graph_oneline.json";
+		if (args[2].equals("-in")){
+			sInputPath = args[3];
+		}
 		
 		// TODO Auto-generated method stub
 		long lStart = System.currentTimeMillis();
@@ -36,7 +40,7 @@ public class KeyPlayer {
 		g = gRDD.first();*/
 		
 		Data data = new Data();
-		g = data.createGraphFromJSONFile("./graph_data/graph_oneline.json");
+		g = data.createGraphFromJSONFile(sInputPath);
 		final Broadcast<JavaRDD<Vertex>> bcVertices = sc.broadcast(g.getVertices());
 		final Broadcast<JavaRDD<Edge>> bcEdges = sc.broadcast(g.getEdges());
 		Utils u = new Utils(bcVertices, bcEdges);
