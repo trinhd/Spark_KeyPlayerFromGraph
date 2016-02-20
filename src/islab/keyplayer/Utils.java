@@ -4,18 +4,12 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.spark.Accumulable;
-import org.apache.spark.Accumulator;
 import org.apache.spark.AccumulatorParam;
-import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 
 import scala.Tuple2;
@@ -289,7 +283,6 @@ public class Utils implements Serializable{
 		return fIndirectInfluence;
 	}
 	
-
 	private BigDecimal IndirectInfluenceOfVertexOnAllVertex(String sVertexName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
 		List<String> OverThresholdVertex = new ArrayList<String>();
@@ -343,7 +336,6 @@ public class Utils implements Serializable{
 		//return mUnsortedAll;
 	}
 	
-
 	public JavaPairRDD<String, List<String>> getIndirectInfluence() {
 		if (this.indirectInfluence.count() > 1 && !Data.flagSorted){
 			JavaPairRDD<List<String>, String> pairTemp = this.indirectInfluence.mapToPair(arg0 -> arg0.swap());

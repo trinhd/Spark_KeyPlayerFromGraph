@@ -1,18 +1,13 @@
 package islab.keyplayer;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
-
-import scala.Tuple2;
 
 public class KeyPlayer {
 	public static SparkConf conf = new SparkConf().setAppName("KeyPlayer");
@@ -41,8 +36,8 @@ public class KeyPlayer {
 		
 		Data data = new Data();
 		g = data.createGraphFromJSONFile(sInputPath);
-		final Broadcast<JavaRDD<Vertex>> bcVertices = sc.broadcast(g.getVertices());
-		final Broadcast<JavaRDD<Edge>> bcEdges = sc.broadcast(g.getEdges());
+		final Broadcast<JavaRDD<Vertex>> bcVertices = sc.broadcast(sc.parallelize(g.getVertices()));
+		final Broadcast<JavaRDD<Edge>> bcEdges = sc.broadcast(sc.parallelize(g.getEdges()));
 		Utils u = new Utils(bcVertices, bcEdges);
 		//JavaRDD<Vertex> vertices = g.getVertices();
 		//JavaRDD<Edge> edges = g.getEdges();
