@@ -18,6 +18,7 @@ public class Utils implements Serializable{
 	private Broadcast<JavaRDD<Vertex>> bcVertices;
 	private Broadcast<JavaRDD<Edge>> bcEdges;
 	private JavaPairRDD<String, List<String>> indirectInfluence;
+	private List<Tuple2<String, Integer>> indirectInfluenceCount;
 	private ArrayList<String> result;
 	private long lCount;//đếm số lượng tổ hợp phải duyệt qua
 
@@ -176,7 +177,7 @@ public class Utils implements Serializable{
 		//return ((result != null) && (!result.isEmpty())) ? KeyPlayer.sc.parallelize(result) : null;
 	}
 	
-	public class BigDecimalAccumulatorParam implements AccumulatorParam<BigDecimal> {
+	/*public class BigDecimalAccumulatorParam implements AccumulatorParam<BigDecimal> {
 
 		@Override
 		public BigDecimal addInPlace(BigDecimal arg0, BigDecimal arg1) {
@@ -198,7 +199,7 @@ public class Utils implements Serializable{
 			return res;
 		}
 		
-	}
+	}*/
 
 	public BigDecimal IndirectInfluenceOfVertexOnOtherVertex(String sStartName, String sEndName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
@@ -317,31 +318,24 @@ public class Utils implements Serializable{
 			mUnsortedAll.add(new Tuple2<String, BigDecimal>(vName, IndirectInfluenceOfVertexOnAllVertex(vName)));
 		}
 		
-		/*mUnsortedAll = vertices.mapToPair(vertex -> {
-			String vName = vertex.getName();
-			return new Tuple2<String, BigDecimal>(vName, IndirectInfluenceOfVertexOnAllVertex(vName));
-		});*/
-
-		/*Map<String, BigDecimal> mSortedAll = new TreeMap<String, BigDecimal>(new ValueComparator2(mUnsortedAll));
-		mSortedAll.putAll(mUnsortedAll);*/
-		/*mUnsortedAll.entrySet().stream().sorted(Map.Entry.comparingByValue())
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));*/
-		
 		JavaPairRDD<BigDecimal, String> mSortedAll = KeyPlayer.sc.parallelizePairs(mUnsortedAll).mapToPair(t -> t.swap());
 		
-		mSortedAll.sortByKey(new ValueComparator2());
-		
-		return mSortedAll.mapToPair(t -> t.swap());
-
-		//return mUnsortedAll;
+		return mSortedAll.sortByKey(false).mapToPair(t -> t.swap());
 	}
 	
 	public JavaPairRDD<String, List<String>> getIndirectInfluence() {
-		if (this.indirectInfluence.count() > 1 && !Data.flagSorted){
+		/*if (this.indirectInfluence.count() > 1 && !Data.flagSorted){
 			JavaPairRDD<List<String>, String> pairTemp = this.indirectInfluence.mapToPair(arg0 -> arg0.swap());
-			pairTemp.sortByKey(new ValueComparator());
+			//pairTemp.sortByKey(new ValueComparator());
 			
-			this.indirectInfluence = pairTemp.mapToPair(arg0 -> arg0.swap());
+			this.indirectInfluence = pairTemp.sortByKey(new ValueComparator()).mapToPair(arg0 -> arg0.swap());
+			Data.flagSorted = true;
+		}*/
+		
+		if (this.indirectInfluence.count() > 1 && !Data.flagSorted) {
+			indirectInfluenceCount = indirectInfluence.mapToPair(tuple -> {
+				return new Tuple2<String, Integer>(tuple._1, tuple._2.size());
+			}).collect();
 			Data.flagSorted = true;
 		}
 			
@@ -349,18 +343,25 @@ public class Utils implements Serializable{
 	}
 	
 	public String getKeyPlayer() {
-		return indirectInfluence.first()._1;
+		return indirectInfluenceCount.get(0)._1;
 	}
 	
 	public List<String> getSmallestGroup() {
 		long lOrgSize = bcVertices.value().count();
 		
 		getAllInfluenceOfVertices();
-		if (this.indirectInfluence.count() > 1 && !Data.flagSorted){
+		/*if (this.indirectInfluence.count() > 1 && !Data.flagSorted){
 			JavaPairRDD<List<String>, String> pairTemp = this.indirectInfluence.mapToPair(arg0 -> arg0.swap());
 			pairTemp.sortByKey(new ValueComparator());
 			
 			this.indirectInfluence = pairTemp.mapToPair(arg0 -> arg0.swap());
+			Data.flagSorted = true;
+		}*/
+		
+		if (this.indirectInfluence.count() > 1 && !Data.flagSorted) {
+			indirectInfluenceCount = indirectInfluence.mapToPair(tuple -> {
+				return new Tuple2<String, Integer>(tuple._1, tuple._2.size());
+			}).collect();
 			Data.flagSorted = true;
 		}
 		
@@ -391,12 +392,13 @@ public class Utils implements Serializable{
 			//PrintCombine(a, k);
 			int iTong = 0;
 			for (int l = 1; l <= k; l++) {
-				iTong += indirectInfluence.collect().get(a[l] - 1)._2.size();
+				iTong += indirectInfluenceCount.get(a[l] - 1)._2;
 			}
 			if (iTong >= Data.iNeed.getValue()) {
 				List<String> lMem = new ArrayList<String>();
 				for (int l = 1; l <= k; l++) {
-					for (String string : indirectInfluence.collect().get(a[l] - 1)._2) {
+					String str = indirectInfluenceCount.get(a[l] - 1)._1;
+					for (String string : indirectInfluence.lookup(str).get(0)) {
 						if (!lMem.contains(string)) {
 							lMem.add(string);
 						}
@@ -407,7 +409,7 @@ public class Utils implements Serializable{
 					//if (result == null) {
 						result = new ArrayList<String>(k);
 						for (int l = 1; l <= k; l++) {
-							result.add(indirectInfluence.collect().get(a[l] - 1)._1);
+							result.add(indirectInfluenceCount.get(a[l] - 1)._1);
 						}
 					//}
 					break;
