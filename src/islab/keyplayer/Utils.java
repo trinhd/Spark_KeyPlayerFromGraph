@@ -300,11 +300,14 @@ public class Utils implements Serializable{
 			}
 		}
 		
-		if (indirectInfluence != null){
-			indirectInfluence = indirectInfluence.union(KeyPlayer.sc.parallelizePairs(Arrays.asList(new Tuple2<String, List<String>>(sVertexName, OverThresholdVertex))));
-		}
-		else{
-			indirectInfluence = KeyPlayer.sc.parallelizePairs(Arrays.asList(new Tuple2<String, List<String>>(sVertexName, OverThresholdVertex)));
+		if (indirectInfluence != null) {
+			if (indirectInfluence.lookup(sVertexName).isEmpty()) {
+				indirectInfluence = indirectInfluence.union(KeyPlayer.sc.parallelizePairs(
+						Arrays.asList(new Tuple2<String, List<String>>(sVertexName, OverThresholdVertex))));
+			}
+		} else {
+			indirectInfluence = KeyPlayer.sc.parallelizePairs(
+					Arrays.asList(new Tuple2<String, List<String>>(sVertexName, OverThresholdVertex)));
 		}
 		return fIndirectInfluence;
 	}
@@ -334,8 +337,8 @@ public class Utils implements Serializable{
 		
 		if (this.indirectInfluence.count() > 1 && !Data.flagSorted) {
 			indirectInfluenceCount = indirectInfluence.mapToPair(tuple -> {
-				return new Tuple2<String, Integer>(tuple._1, tuple._2.size());
-			}).collect();
+				return new Tuple2<Integer, String>(tuple._2.size(), tuple._1);
+			}).sortByKey(false).mapToPair(tuple -> tuple.swap()).collect();
 			Data.flagSorted = true;
 		}
 			
@@ -360,8 +363,8 @@ public class Utils implements Serializable{
 		
 		if (this.indirectInfluence.count() > 1 && !Data.flagSorted) {
 			indirectInfluenceCount = indirectInfluence.mapToPair(tuple -> {
-				return new Tuple2<String, Integer>(tuple._1, tuple._2.size());
-			}).collect();
+				return new Tuple2<Integer, String>(tuple._2.size(), tuple._1);
+			}).sortByKey(false).mapToPair(tuple -> tuple.swap()).collect();
 			Data.flagSorted = true;
 		}
 		

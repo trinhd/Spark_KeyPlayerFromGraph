@@ -60,6 +60,8 @@ public class KeyPlayer {
 		all.foreach(tuple -> {
 			System.out.println("[ " + tuple._1 + " : " + tuple._2 + " ]");
 		});
+		System.out.println("FIRST suc anh huong: ");
+		System.out.println(all.first()._1 + ": " + all.first()._2.toString());
 		
 		JavaPairRDD<String, List<String>> inif = u.getIndirectInfluence();
 		System.out.println("--------------------------------->>>>>>Sức ảnh hưởng vượt ngưỡng của tất cả các đỉnh:");// + inif.toString());
