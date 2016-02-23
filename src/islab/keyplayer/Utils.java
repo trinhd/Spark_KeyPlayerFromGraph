@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.spark.Accumulator;
 import org.apache.spark.AccumulatorParam;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -177,30 +178,52 @@ public class Utils implements Serializable{
 		//return ((result != null) && (!result.isEmpty())) ? KeyPlayer.sc.parallelize(result) : null;
 	}
 	
-	/*public class BigDecimalAccumulatorParam implements AccumulatorParam<BigDecimal> {
+	public class BigDecimalAccumulatorParam implements AccumulatorParam<BigDecimal> {
 
 		@Override
 		public BigDecimal addInPlace(BigDecimal arg0, BigDecimal arg1) {
 			// TODO Auto-generated method stub
-			BigDecimal res = arg0.add(arg1);
-			return res;
+			return arg0.add(arg1);
 		}
 
 		@Override
 		public BigDecimal zero(BigDecimal arg0) {
 			// TODO Auto-generated method stub
-			return BigDecimal.ZERO;
+			return BigDecimal.ZERO.add(arg0);
 		}
 
 		@Override
 		public BigDecimal addAccumulator(BigDecimal arg0, BigDecimal arg1) {
 			// TODO Auto-generated method stub
-			BigDecimal res = arg0.add(arg1);
-			return res;
+			return arg0.add(arg1);
 		}
 		
-	}*/
+	}
+	
+	public class ListStringAccumulatorParam implements AccumulatorParam<List<String>>{
 
+		@Override
+		public List<String> addInPlace(List<String> arg0, List<String> arg1) {
+			// TODO Auto-generated method stub
+			arg0.addAll(arg1);
+			return arg0;
+		}
+
+		@Override
+		public List<String> zero(List<String> arg0) {
+			// TODO Auto-generated method stub
+			return arg0;
+		}
+
+		@Override
+		public List<String> addAccumulator(List<String> arg0, List<String> arg1) {
+			// TODO Auto-generated method stub
+			arg0.addAll(arg1);
+			return arg0;
+		}
+		
+	}
+	
 	public BigDecimal IndirectInfluenceOfVertexOnOtherVertex(String sStartName, String sEndName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
 		//JavaRDD<Vertex> vertices = bcGraph.getValue().getVertices();
@@ -285,11 +308,25 @@ public class Utils implements Serializable{
 	}
 	
 	private BigDecimal IndirectInfluenceOfVertexOnAllVertex(String sVertexName) {
-		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
-		List<String> OverThresholdVertex = new ArrayList<String>();
-		List<Vertex> vertices = bcVertices.value().collect();
-
-		for (Vertex vertex : vertices) {
+		//BigDecimal fIndirectInfluence = BigDecimal.ZERO;
+		//List<String> OverThresholdVertex = new ArrayList<String>();
+		JavaRDD<Vertex> vertices = bcVertices.value();
+		Accumulator<BigDecimal> accBD = new Accumulator<BigDecimal>(BigDecimal.ZERO, new BigDecimalAccumulatorParam());
+		Accumulator<List<String>> accOverThresholdVertex = new Accumulator<List<String>>(new ArrayList<String>(), new ListStringAccumulatorParam());
+		
+		vertices.foreach(vertex -> {
+			String vName = vertex.getName();
+			if (!vName.equals(sVertexName)) {
+				BigDecimal bd = IndirectInfluenceOfVertexOnOtherVertex(sVertexName, vName);
+				//fIndirectInfluence = fIndirectInfluence.add(bd);
+				accBD.add(bd);
+				if (bd.compareTo(Data.theta.getValue()) != -1) {
+					accOverThresholdVertex.add(Arrays.asList(vName));
+				}
+			}
+		});
+		
+		/*for (Vertex vertex : vertices) {
 			String vName = vertex.getName();
 			if (!vName.equals(sVertexName)) {
 				BigDecimal bd = IndirectInfluenceOfVertexOnOtherVertex(sVertexName, vName);
@@ -298,32 +335,30 @@ public class Utils implements Serializable{
 					OverThresholdVertex.add(vName);
 				}
 			}
-		}
+		}*/
 		
 		if (indirectInfluence != null) {
 			if (indirectInfluence.lookup(sVertexName).isEmpty()) {
 				indirectInfluence = indirectInfluence.union(KeyPlayer.sc.parallelizePairs(
-						Arrays.asList(new Tuple2<String, List<String>>(sVertexName, OverThresholdVertex))));
+						Arrays.asList(new Tuple2<String, List<String>>(sVertexName, accOverThresholdVertex.value()))));
 			}
 		} else {
 			indirectInfluence = KeyPlayer.sc.parallelizePairs(
-					Arrays.asList(new Tuple2<String, List<String>>(sVertexName, OverThresholdVertex)));
+					Arrays.asList(new Tuple2<String, List<String>>(sVertexName, accOverThresholdVertex.value())));
 		}
-		return fIndirectInfluence;
+		return accBD.value();
 	}
 
 	public JavaPairRDD<String, BigDecimal> getAllInfluenceOfVertices() {
-		List<Tuple2<String, BigDecimal>> mUnsortedAll = new ArrayList<Tuple2<String, BigDecimal>>();
+		List<Tuple2<BigDecimal, String>> mUnsortedAll = new ArrayList<Tuple2<BigDecimal, String>>();
 		List<Vertex> vertices = bcVertices.value().collect();
 
 		for (Vertex vertex : vertices) {
 			String vName = vertex.getName();
-			mUnsortedAll.add(new Tuple2<String, BigDecimal>(vName, IndirectInfluenceOfVertexOnAllVertex(vName)));
+			mUnsortedAll.add(new Tuple2<BigDecimal, String>(IndirectInfluenceOfVertexOnAllVertex(vName), vName));
 		}
 		
-		JavaPairRDD<BigDecimal, String> mSortedAll = KeyPlayer.sc.parallelizePairs(mUnsortedAll).mapToPair(t -> t.swap());
-		
-		return mSortedAll.sortByKey(false).mapToPair(t -> t.swap());
+		return KeyPlayer.sc.parallelizePairs(mUnsortedAll).sortByKey(false).mapToPair(t -> t.swap());
 	}
 	
 	public JavaPairRDD<String, List<String>> getIndirectInfluence() {

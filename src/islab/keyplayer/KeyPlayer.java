@@ -25,8 +25,8 @@ public class KeyPlayer {
 
 			Data data = new Data();
 			g = data.createGraphFromJSONFile(sInputPath);
-			final Broadcast<JavaRDD<Vertex>> bcVertices = sc.broadcast(sc.parallelize(g.getVertices()));
-			final Broadcast<JavaRDD<Edge>> bcEdges = sc.broadcast(sc.parallelize(g.getEdges()));
+			final Broadcast<JavaRDD<Vertex>> bcVertices = sc.broadcast(sc.parallelize(g.getVertices()).cache());
+			final Broadcast<JavaRDD<Edge>> bcEdges = sc.broadcast(sc.parallelize(g.getEdges()).cache());
 			Utils u = new Utils(bcVertices, bcEdges);
 
 			System.out.println("" + u.GraphToString());
