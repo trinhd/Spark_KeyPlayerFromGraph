@@ -14,13 +14,10 @@ public class KeyPlayer {
 	public static JavaSparkContext sc = new JavaSparkContext(conf);
 	
 	public static void main(String[] args) {
-		System.out.println("Ngưỡng sức ảnh hưởng là: " + args[0]);
-		Data.theta = KeyPlayer.sc.broadcast(new BigDecimal(args[0]));
-		System.out.println("Ngưỡng số đỉnh chịu sức ảnh hưởng là: " + args[1]);
-		Data.iNeed = KeyPlayer.sc.broadcast(Integer.parseInt(args[1]));
+		
 		String sInputPath = "./graph_data/graph_oneline.json";
-		if (args[2].equals("-in")) {
-			sInputPath = args[3];
+		if (args[0].equals("-in")) {
+			sInputPath = args[1];
 
 			// TODO Auto-generated method stub
 			long lStart = System.currentTimeMillis();
@@ -36,13 +33,13 @@ public class KeyPlayer {
 			
 			long lStart2 = System.currentTimeMillis();
 			
-			if (args[4].equals("-b1")) {
+			if (args[2].equals("-b1")) {
 				lStart2 = System.currentTimeMillis();
-				System.out.println("Sức ảnh hưởng gián tiếp của đỉnh " + args[5] + " lên đỉnh " + args[6] + " là: "
-						+ u.IndirectInfluenceOfVertexOnOtherVertex(args[5], args[6]));
+				System.out.println("Sức ảnh hưởng gián tiếp của đỉnh " + args[3] + " lên đỉnh " + args[4] + " là: "
+						+ u.IndirectInfluenceOfVertexOnOtherVertex(args[3], args[4]));
 			}
 
-			if (args[4].equals("-b2")) {
+			if (args[2].equals("-b2")) {
 				lStart2 = System.currentTimeMillis();
 				JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices();
 
@@ -55,8 +52,13 @@ public class KeyPlayer {
 				System.out.println(all.first()._1 + ": " + all.first()._2.toString());
 			}
 
-			if (args[4].equals("-b3")) {
+			if (args[2].equals("-b3")) {
 				lStart2 = System.currentTimeMillis();
+				
+				System.out.println("Ngưỡng sức ảnh hưởng là: " + args[3]);
+				Data.theta = KeyPlayer.sc.broadcast(new BigDecimal(args[3]));
+				System.out.println("Ngưỡng số đỉnh chịu sức ảnh hưởng là: " + args[4]);
+				Data.iNeed = KeyPlayer.sc.broadcast(Integer.parseInt(args[4]));
 				JavaPairRDD<String, List<String>> inif = u.getIndirectInfluence();
 				System.out.println("Sức ảnh hưởng vượt ngưỡng của tất cả các đỉnh:");
 
