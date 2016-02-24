@@ -7,9 +7,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.spark.Accumulator;
-import org.apache.spark.AccumulatorParam;
-import org.apache.spark.api.java.AbstractJavaRDDLike;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.broadcast.Broadcast;
@@ -224,8 +221,8 @@ public class Utils implements Serializable{
 	public BigDecimal IndirectInfluenceOfVertexOnOtherVertex(List<Vertex> vertices, List<Edge> edges, String sStartName, String sEndName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
 		
-		Broadcast<List<Vertex>> bcVertices = KeyPlayer.sc.broadcast(vertices);
-		Broadcast<List<Edge>> bcEdges = KeyPlayer.sc.broadcast(edges);
+		final Broadcast<List<Vertex>> bcVertices = KeyPlayer.sc.broadcast(vertices);
+		final Broadcast<List<Edge>> bcEdges = KeyPlayer.sc.broadcast(edges);
 		
 		//System.out.println("2 Đỉnh cần tính: " + sStartName + " : " + sEndName);
 		
@@ -343,21 +340,7 @@ public class Utils implements Serializable{
 	public List<String> getSmallestGroup(List<Vertex> vertices, List<Edge> edges) {
 		int iOrgSize = vertices.size();
 		
-		getAllInfluenceOfVertices(vertices, edges);
-		/*if (this.indirectInfluence.count() > 1 && !Data.flagSorted){
-			JavaPairRDD<List<String>, String> pairTemp = this.indirectInfluence.mapToPair(arg0 -> arg0.swap());
-			pairTemp.sortByKey(new ValueComparator());
-			
-			this.indirectInfluence = pairTemp.mapToPair(arg0 -> arg0.swap());
-			Data.flagSorted = true;
-		}*/
-		
-		if (this.indirectInfluence.count() > 1 && !Data.flagSorted) {
-			indirectInfluenceCount = indirectInfluence.mapToPair(tuple -> {
-				return new Tuple2<Integer, String>(tuple._2.size(), tuple._1);
-			}).sortByKey(false).mapToPair(tuple -> tuple.swap()).collect();
-			Data.flagSorted = true;
-		}
+		getIndirectInfluence(vertices, edges);
 		
 		int iEdgesCount = edges.size();
 

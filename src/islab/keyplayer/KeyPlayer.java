@@ -5,9 +5,9 @@ import java.util.List;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.broadcast.Broadcast;
+
+import scala.Tuple2;
 
 public class KeyPlayer {
 	public static SparkConf conf = new SparkConf().setAppName("KeyPlayer").setMaster("spark://PTNHTTT10:7077");
@@ -42,6 +42,7 @@ public class KeyPlayer {
 			if (args[2].equals("-b2")) {
 				lStart2 = System.currentTimeMillis();
 				JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices(vertices, edges);
+				all.cache();
 
 				System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
 				all.foreach(tuple -> {
@@ -49,7 +50,8 @@ public class KeyPlayer {
 				});
 				
 				System.out.println("Key Player là: ");
-				System.out.println(all.first()._1 + ": " + all.first()._2.toString());
+				Tuple2<String, BigDecimal> kp = all.first();
+				System.out.println(kp._1 + ": " + kp._2.toString());
 			}
 
 			if (args[2].equals("-b3")) {
