@@ -10,7 +10,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import scala.Tuple2;
 
 public class KeyPlayer {
-	public static SparkConf conf = new SparkConf().setAppName("KeyPlayer").setMaster("spark://PTNHTTT10:7077");
+	private static SparkConf conf = new SparkConf();//.setAppName("KeyPlayer").setMaster("spark://PTNHTTT10:7077");
 	public static JavaSparkContext sc = new JavaSparkContext(conf);
 	
 	public static void main(String[] args) {
