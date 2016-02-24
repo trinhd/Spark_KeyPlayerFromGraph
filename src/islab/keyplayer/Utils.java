@@ -227,25 +227,32 @@ public class Utils implements Serializable{
 		Broadcast<List<Vertex>> bcVertices = KeyPlayer.sc.broadcast(vertices);
 		Broadcast<List<Edge>> bcEdges = KeyPlayer.sc.broadcast(edges);
 		
-		JavaRDD<List<String>> rddAllPath = KeyPlayer.sc.parallelize(getAllPathBetweenTwoVertex(edges, sStartName, sEndName));
-		rddAllPath.cache();
+		//System.out.println("2 Đỉnh cần tính: " + sStartName + " : " + sEndName);
 		
-		if (rddAllPath != null) {
-			fIndirectInfluence = rddAllPath.map(path -> {
-				BigDecimal bdTemp = BigDecimal.ZERO;
-				String sBefore = null;
-				for (String v : path) {
-					if (sBefore != null) {
-						bdTemp = bdTemp.add(getVertexSpreadCoefficientFromName(bcVertices.value(), v, sBefore)
-								.multiply(getEdgeDirectInfluenceFromStartEndVertex(bcEdges.value(), sBefore, v)));
-						if (bdTemp.compareTo(BigDecimal.ONE) == 1) {
-							return BigDecimal.ONE;
+		List<List<String>> listPath = getAllPathBetweenTwoVertex(edges, sStartName, sEndName);
+		if (listPath != null) {
+			JavaRDD<List<String>> rddAllPath = KeyPlayer.sc.parallelize(listPath);
+			rddAllPath.cache();
+
+			if (rddAllPath != null) {
+				JavaRDD<BigDecimal> rddBD = rddAllPath.map(path -> {
+					BigDecimal bdTemp = BigDecimal.ZERO;
+					String sBefore = null;
+					for (String v : path) {
+						if (sBefore != null) {
+							bdTemp = bdTemp.add(getVertexSpreadCoefficientFromName(bcVertices.value(), v, sBefore)
+									.multiply(getEdgeDirectInfluenceFromStartEndVertex(bcEdges.value(), sBefore, v)));
+							if (bdTemp.compareTo(BigDecimal.ONE) == 1) {
+								return BigDecimal.ONE;
+							}
 						}
+						sBefore = v;
 					}
-					sBefore = v;
-				}
-				return bdTemp;
-			}).reduce((bd1, bd2) -> bd1.add(bd2));
+					return bdTemp;
+				});
+				rddBD.foreach(f -> System.out.println(f));
+				fIndirectInfluence = rddBD.reduce((bd1, bd2) -> bd1.add(bd2));
+			}
 		}
 
 		return (fIndirectInfluence.compareTo(BigDecimal.ONE) == 1) ? BigDecimal.ONE : fIndirectInfluence;
