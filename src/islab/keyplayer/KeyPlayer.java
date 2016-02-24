@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.broadcast.Broadcast;
 
 import scala.Tuple2;
 
@@ -27,6 +28,8 @@ public class KeyPlayer {
 			g = data.createGraphFromJSONFile(sInputPath);
 			List<Vertex> vertices = g.getVertices();
 			List<Edge> edges = g.getEdges();
+			Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
+			Broadcast<List<Edge>> bcEdges = sc.broadcast(edges);
 			Utils u = new Utils();
 
 			System.out.println("" + u.GraphToString(vertices, edges));
@@ -36,12 +39,12 @@ public class KeyPlayer {
 			if (args[2].equals("-b1")) {
 				lStart2 = System.currentTimeMillis();
 				System.out.println("Sức ảnh hưởng gián tiếp của đỉnh " + args[3] + " lên đỉnh " + args[4] + " là: "
-						+ u.IndirectInfluenceOfVertexOnOtherVertex(vertices, edges, args[3], args[4]));
+						+ u.IndirectInfluenceOfVertexOnOtherVertex(bcVertices, bcEdges, args[3], args[4]));
 			}
 
 			if (args[2].equals("-b2")) {
 				lStart2 = System.currentTimeMillis();
-				JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices(vertices, edges);
+				JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices(bcVertices, bcEdges);
 				all.cache();
 
 				System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
@@ -61,7 +64,7 @@ public class KeyPlayer {
 				Data.theta = new BigDecimal(args[3]);
 				System.out.println("Ngưỡng số đỉnh chịu sức ảnh hưởng là: " + args[4]);
 				Data.iNeed = Integer.parseInt(args[4]);
-				JavaPairRDD<String, List<String>> inif = u.getIndirectInfluence(vertices, edges);
+				JavaPairRDD<String, List<String>> inif = u.getIndirectInfluence(bcVertices, bcEdges);
 				System.out.println("Sức ảnh hưởng vượt ngưỡng của tất cả các đỉnh:");
 
 				// In ra danh sách các đỉnh và các đỉnh chịu sức ảnh hưởng vượt
@@ -75,8 +78,8 @@ public class KeyPlayer {
 				});
 				//
 
-				String kp = u.getKeyPlayer(vertices, edges);
-				List<String> res = u.getSmallestGroup(vertices, edges);
+				String kp = u.getKeyPlayer(bcVertices, bcEdges);
+				List<String> res = u.getSmallestGroup(bcVertices, bcEdges);
 				System.out.println("Key Player: " + kp.toString());
 
 				System.out.println("Nhóm nhỏ nhất thỏa ngưỡng là: " + res);

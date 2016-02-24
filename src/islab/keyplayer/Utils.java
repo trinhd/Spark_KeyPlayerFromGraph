@@ -218,15 +218,15 @@ public class Utils implements Serializable{
 	}
 	*/
 	
-	public BigDecimal IndirectInfluenceOfVertexOnOtherVertex(List<Vertex> vertices, List<Edge> edges, String sStartName, String sEndName) {
+	public BigDecimal IndirectInfluenceOfVertexOnOtherVertex(Broadcast<List<Vertex>> bcVertices, Broadcast<List<Edge>> bcEdges, String sStartName, String sEndName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
 		
-		final Broadcast<List<Vertex>> bcVertices = KeyPlayer.sc.broadcast(vertices);
-		final Broadcast<List<Edge>> bcEdges = KeyPlayer.sc.broadcast(edges);
+		//final Broadcast<List<Vertex>> bcVertices = KeyPlayer.sc.broadcast(vertices);
+		//final Broadcast<List<Edge>> bcEdges = KeyPlayer.sc.broadcast(edges);
 		
 		//System.out.println("2 Đỉnh cần tính: " + sStartName + " : " + sEndName);
 		
-		List<List<String>> listPath = getAllPathBetweenTwoVertex(edges, sStartName, sEndName);
+		List<List<String>> listPath = getAllPathBetweenTwoVertex(bcEdges.value(), sStartName, sEndName);
 		if (listPath != null) {
 			JavaRDD<List<String>> rddAllPath = KeyPlayer.sc.parallelize(listPath);
 			rddAllPath.cache();
@@ -253,7 +253,7 @@ public class Utils implements Serializable{
 		return (fIndirectInfluence.compareTo(BigDecimal.ONE) == 1) ? BigDecimal.ONE : fIndirectInfluence;
 	}
 	
-	private BigDecimal IndirectInfluenceOfVertexOnAllVertex(List<Vertex> vertices, List<Edge> edges, String sVertexName) {
+	private BigDecimal IndirectInfluenceOfVertexOnAllVertex(Broadcast<List<Vertex>> bcVertices, Broadcast<List<Edge>> bcEdges, String sVertexName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
 		List<String> OverThresholdVertex = new ArrayList<String>();
 		/*JavaRDD<Vertex> vertices = bcVertices.value();
@@ -272,10 +272,12 @@ public class Utils implements Serializable{
 			}
 		});*/
 		
+		List<Vertex> vertices = bcVertices.value();
+		
 		for (Vertex vertex : vertices) {
 			String vName = vertex.getName();
 			if (!vName.equals(sVertexName)) {
-				BigDecimal bd = IndirectInfluenceOfVertexOnOtherVertex(vertices, edges, sVertexName, vName);
+				BigDecimal bd = IndirectInfluenceOfVertexOnOtherVertex(bcVertices, bcEdges, sVertexName, vName);
 				fIndirectInfluence = fIndirectInfluence.add(bd);
 				if (bd.compareTo(Data.theta) != -1) {
 					OverThresholdVertex.add(vName);
@@ -295,19 +297,21 @@ public class Utils implements Serializable{
 		return fIndirectInfluence;//accBD.value();
 	}
 
-	public JavaPairRDD<String, BigDecimal> getAllInfluenceOfVertices(List<Vertex> vertices, List<Edge> edges) {
+	public JavaPairRDD<String, BigDecimal> getAllInfluenceOfVertices(Broadcast<List<Vertex>> bcVertices, Broadcast<List<Edge>> bcEdges) {
 		List<Tuple2<BigDecimal, String>> mUnsortedAll = new ArrayList<Tuple2<BigDecimal, String>>();
 		//List<Vertex> vertices = bcVertices.value().collect();
+		
+		List<Vertex> vertices = bcVertices.value();
 
 		for (Vertex vertex : vertices) {
 			String vName = vertex.getName();
-			mUnsortedAll.add(new Tuple2<BigDecimal, String>(IndirectInfluenceOfVertexOnAllVertex(vertices, edges, vName), vName));
+			mUnsortedAll.add(new Tuple2<BigDecimal, String>(IndirectInfluenceOfVertexOnAllVertex(bcVertices, bcEdges, vName), vName));
 		}
 		
 		return KeyPlayer.sc.parallelizePairs(mUnsortedAll).sortByKey(false).mapToPair(t -> t.swap());
 	}
 	
-	public JavaPairRDD<String, List<String>> getIndirectInfluence(List<Vertex> vertices, List<Edge> edges) {
+	public JavaPairRDD<String, List<String>> getIndirectInfluence(Broadcast<List<Vertex>> bcVertices, Broadcast<List<Edge>> bcEdges) {
 		/*if (this.indirectInfluence.count() > 1 && !Data.flagSorted){
 			JavaPairRDD<List<String>, String> pairTemp = this.indirectInfluence.mapToPair(arg0 -> arg0.swap());
 			//pairTemp.sortByKey(new ValueComparator());
@@ -317,7 +321,7 @@ public class Utils implements Serializable{
 		}*/
 		
 		if (this.indirectInfluence == null){
-			getAllInfluenceOfVertices(vertices, edges);
+			getAllInfluenceOfVertices(bcVertices, bcEdges);
 		}
 		
 		if (this.indirectInfluence.count() > 1 && !Data.flagSorted) {
@@ -330,19 +334,19 @@ public class Utils implements Serializable{
 		return this.indirectInfluence;
 	}
 	
-	public String getKeyPlayer(List<Vertex> vertices, List<Edge> edges) {
+	public String getKeyPlayer(Broadcast<List<Vertex>> bcVertices, Broadcast<List<Edge>> bcEdges) {
 		if (indirectInfluenceCount == null){
-			getIndirectInfluence(vertices, edges);
+			getAllInfluenceOfVertices(bcVertices, bcEdges);
 		}
 		return indirectInfluenceCount.get(0)._1;
 	}
 	
-	public List<String> getSmallestGroup(List<Vertex> vertices, List<Edge> edges) {
-		int iOrgSize = vertices.size();
+	public List<String> getSmallestGroup(Broadcast<List<Vertex>> bcVertices, Broadcast<List<Edge>> bcEdges) {
+		int iOrgSize = bcVertices.value().size();
 		
-		getIndirectInfluence(vertices, edges);
+		getIndirectInfluence(bcVertices, bcEdges);
 		
-		int iEdgesCount = edges.size();
+		int iEdgesCount = bcEdges.value().size();
 
 		for (int i = 1; i < iOrgSize; i++) {
 			if (result == null) {
