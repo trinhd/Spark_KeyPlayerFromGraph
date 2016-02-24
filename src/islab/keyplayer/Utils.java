@@ -235,7 +235,7 @@ public class Utils implements Serializable{
 			rddAllPath.cache();
 
 			if (rddAllPath != null) {
-				JavaRDD<BigDecimal> rddBD = rddAllPath.map(path -> {
+				fIndirectInfluence = rddAllPath.map(path -> {
 					BigDecimal bdTemp = BigDecimal.ZERO;
 					String sBefore = null;
 					for (String v : path) {
@@ -249,9 +249,7 @@ public class Utils implements Serializable{
 						sBefore = v;
 					}
 					return bdTemp;
-				});
-				rddBD.foreach(f -> System.out.println(f));
-				fIndirectInfluence = rddBD.reduce((bd1, bd2) -> bd1.add(bd2));
+				}).reduce((bd1, bd2) -> bd1.add(bd2));
 			}
 		}
 

@@ -10,7 +10,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 
 public class KeyPlayer {
-	public static SparkConf conf = new SparkConf().setAppName("KeyPlayer");
+	public static SparkConf conf = new SparkConf().setAppName("KeyPlayer").setMaster("spark://PTNHTTT10:7077");
 	public static JavaSparkContext sc = new JavaSparkContext(conf);
 	
 	public static void main(String[] args) {
