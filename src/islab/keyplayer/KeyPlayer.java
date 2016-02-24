@@ -25,23 +25,23 @@ public class KeyPlayer {
 
 			Data data = new Data();
 			g = data.createGraphFromJSONFile(sInputPath);
-			final Broadcast<JavaRDD<Vertex>> bcVertices = sc.broadcast(sc.parallelize(g.getVertices()).cache());
-			final Broadcast<JavaRDD<Edge>> bcEdges = sc.broadcast(sc.parallelize(g.getEdges()).cache());
-			Utils u = new Utils(bcVertices, bcEdges);
+			List<Vertex> vertices = g.getVertices();
+			List<Edge> edges = g.getEdges();
+			Utils u = new Utils();
 
-			System.out.println("" + u.GraphToString());
+			System.out.println("" + u.GraphToString(vertices, edges));
 			
 			long lStart2 = System.currentTimeMillis();
 			
 			if (args[2].equals("-b1")) {
 				lStart2 = System.currentTimeMillis();
 				System.out.println("Sức ảnh hưởng gián tiếp của đỉnh " + args[3] + " lên đỉnh " + args[4] + " là: "
-						+ u.IndirectInfluenceOfVertexOnOtherVertex(args[3], args[4]));
+						+ u.IndirectInfluenceOfVertexOnOtherVertex(vertices, edges, args[3], args[4]));
 			}
 
 			if (args[2].equals("-b2")) {
 				lStart2 = System.currentTimeMillis();
-				JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices();
+				JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices(vertices, edges);
 
 				System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
 				all.foreach(tuple -> {
@@ -56,10 +56,10 @@ public class KeyPlayer {
 				lStart2 = System.currentTimeMillis();
 				
 				System.out.println("Ngưỡng sức ảnh hưởng là: " + args[3]);
-				Data.theta = KeyPlayer.sc.broadcast(new BigDecimal(args[3]));
+				Data.theta = new BigDecimal(args[3]);
 				System.out.println("Ngưỡng số đỉnh chịu sức ảnh hưởng là: " + args[4]);
-				Data.iNeed = KeyPlayer.sc.broadcast(Integer.parseInt(args[4]));
-				JavaPairRDD<String, List<String>> inif = u.getIndirectInfluence();
+				Data.iNeed = Integer.parseInt(args[4]);
+				JavaPairRDD<String, List<String>> inif = u.getIndirectInfluence(vertices, edges);
 				System.out.println("Sức ảnh hưởng vượt ngưỡng của tất cả các đỉnh:");
 
 				// In ra danh sách các đỉnh và các đỉnh chịu sức ảnh hưởng vượt
@@ -73,8 +73,8 @@ public class KeyPlayer {
 				});
 				//
 
-				String kp = u.getKeyPlayer();
-				List<String> res = u.getSmallestGroup();
+				String kp = u.getKeyPlayer(vertices, edges);
+				List<String> res = u.getSmallestGroup(vertices, edges);
 				System.out.println("Key Player: " + kp.toString());
 
 				System.out.println("Nhóm nhỏ nhất thỏa ngưỡng là: " + res);
