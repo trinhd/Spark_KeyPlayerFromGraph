@@ -7,14 +7,17 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
+import org.apache.spark.broadcast.HttpBroadcastFactory;
 
 import scala.Tuple2;
+import scala.reflect.ClassTag;
 
 public class KeyPlayer {
-	private static SparkConf conf = new SparkConf().setAppName("KeyPlayerSpark").setMaster("spark://PTNHTTT10:7077");
-	public static JavaSparkContext sc = new JavaSparkContext(conf);
 	
 	public static void main(String[] args) {
+		
+		SparkConf conf = new SparkConf().setAppName("KeyPlayerSpark").setMaster("spark://PTNHTTT10:7077");
+		JavaSparkContext sc = new JavaSparkContext(conf);
 		
 		String sInputPath = "./graph_data/graph_oneline.json";
 		if (args[0].equals("-in")) {
@@ -28,10 +31,16 @@ public class KeyPlayer {
 			g = data.createGraphFromJSONFile(sInputPath);
 			List<Vertex> vertices = g.getVertices();
 			List<Edge> edges = g.getEdges();
+			/*HttpBroadcastFactory httpBC = new HttpBroadcastFactory();
+			ClassTag<List<Vertex>> ctListVer = scala.reflect.ClassTag$.MODULE$.apply(List.class);
+			ClassTag<List<Edge>> ctListEdge = scala.reflect.ClassTag$.MODULE$.apply(List.class);
+			Broadcast<List<Vertex>> bcVertices = httpBC.newBroadcast(vertices, false, 0, ctListVer);
+			Broadcast<List<Edge>> bcEdges = httpBC.newBroadcast(edges, false, 1, ctListEdge);*/
 			Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
 			Broadcast<List<Edge>> bcEdges = sc.broadcast(edges);
-			Utils u = new Utils();
-
+			
+			Utils u = new Utils(sc);
+			
 			System.out.println("" + u.GraphToString(vertices, edges));
 			
 			long lStart2 = System.currentTimeMillis();

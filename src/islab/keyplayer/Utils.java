@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 
 import scala.Tuple2;
@@ -22,14 +23,16 @@ public class Utils implements Serializable{
 	private List<Tuple2<String, Integer>> indirectInfluenceCount;
 	private ArrayList<String> result;
 	private long lCount;//đếm số lượng tổ hợp phải duyệt qua
+	private transient JavaSparkContext sc;
 
-	public Utils(){
+	public Utils(JavaSparkContext sc){
 		this.indirectInfluence = null;
 		this.indirectInfluenceCount = null;
 		this.result = null;
 		this.lCount = 0;
 		//this.vertices = vertices;
 		//this.edges = edges;
+		this.sc = sc;
 	}
 	
 	public Vertex getVertexFromName(List<Vertex> vertices, String sName) {
@@ -228,7 +231,7 @@ public class Utils implements Serializable{
 		
 		List<List<String>> listPath = getAllPathBetweenTwoVertex(bcEdges.value(), sStartName, sEndName);
 		if (listPath != null) {
-			JavaRDD<List<String>> rddAllPath = KeyPlayer.sc.parallelize(listPath);
+			JavaRDD<List<String>> rddAllPath = sc.parallelize(listPath);
 			rddAllPath.cache();
 
 			if (rddAllPath != null) {
@@ -287,11 +290,11 @@ public class Utils implements Serializable{
 		
 		if (indirectInfluence != null) {
 			if (indirectInfluence.lookup(sVertexName).isEmpty()) {
-				indirectInfluence = indirectInfluence.union(KeyPlayer.sc.parallelizePairs(
+				indirectInfluence = indirectInfluence.union(sc.parallelizePairs(
 						Arrays.asList(new Tuple2<String, List<String>>(sVertexName, OverThresholdVertex))));//accOverThresholdVertex.value()))));
 			}
 		} else {
-			indirectInfluence = KeyPlayer.sc.parallelizePairs(
+			indirectInfluence = sc.parallelizePairs(
 					Arrays.asList(new Tuple2<String, List<String>>(sVertexName, OverThresholdVertex)));//accOverThresholdVertex.value())));
 		}
 		return fIndirectInfluence;//accBD.value();
@@ -308,7 +311,7 @@ public class Utils implements Serializable{
 			mUnsortedAll.add(new Tuple2<BigDecimal, String>(IndirectInfluenceOfVertexOnAllVertex(bcVertices, bcEdges, vName), vName));
 		}
 		
-		return KeyPlayer.sc.parallelizePairs(mUnsortedAll).sortByKey(false).mapToPair(t -> t.swap());
+		return sc.parallelizePairs(mUnsortedAll).sortByKey(false).mapToPair(t -> t.swap());
 	}
 	
 	public JavaPairRDD<String, List<String>> getIndirectInfluence(Broadcast<List<Vertex>> bcVertices, Broadcast<List<Edge>> bcEdges) {
