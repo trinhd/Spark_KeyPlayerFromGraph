@@ -10,8 +10,6 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.spark.broadcast.Broadcast;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -21,10 +19,10 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 
 public class Data {//implements Function<String, Graph> {
-	public static Broadcast<BigDecimal> theta = KeyPlayer.sc.broadcast(new BigDecimal("0.3"));// ngưỡng sức ảnh hưởng
+	public static BigDecimal theta = new BigDecimal("0.3");// ngưỡng sức ảnh hưởng
 	public static int iK;//số phần tử trong tổ hợp, tăng dần để tìm cụm nhỏ nhất thỏa điều kiện.
 	public static int iN;//số phần tử trong tập ban đầu cần xét, sẽ cắt giảm nếu các phần tử sau không thỏa.
-	public static Broadcast<Integer> iNeed = KeyPlayer.sc.broadcast(15);//ngưỡng số đỉnh chịu sức ảnh hưởng vượt ngưỡng theta ở trên của một hoặc nhóm đỉnh trong đồ thị.
+	public static int iNeed = 15;//ngưỡng số đỉnh chịu sức ảnh hưởng vượt ngưỡng theta ở trên của một hoặc nhóm đỉnh trong đồ thị.
 	public static boolean flagSorted = false;// cờ đánh dấu đã sắp xếp mảng hay chưa. 
 	private FileReader fr = null;
 

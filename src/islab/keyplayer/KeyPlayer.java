@@ -5,15 +5,19 @@ import java.util.List;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
+import org.apache.spark.broadcast.HttpBroadcastFactory;
+
+import scala.Tuple2;
+import scala.reflect.ClassTag;
 
 public class KeyPlayer {
-	public static SparkConf conf = new SparkConf().setAppName("KeyPlayer");
-	public static JavaSparkContext sc = new JavaSparkContext(conf);
 	
 	public static void main(String[] args) {
+		
+		SparkConf conf = new SparkConf().setAppName("KeyPlayerSpark").setMaster("spark://PTNHTTT10:7077");
+		JavaSparkContext sc = new JavaSparkContext(conf);
 		
 		String sInputPath = "./graph_data/graph_oneline.json";
 		if (args[0].equals("-in")) {
@@ -25,23 +29,32 @@ public class KeyPlayer {
 
 			Data data = new Data();
 			g = data.createGraphFromJSONFile(sInputPath);
-			final Broadcast<JavaRDD<Vertex>> bcVertices = sc.broadcast(sc.parallelize(g.getVertices()).cache());
-			final Broadcast<JavaRDD<Edge>> bcEdges = sc.broadcast(sc.parallelize(g.getEdges()).cache());
-			Utils u = new Utils(bcVertices, bcEdges);
-
-			System.out.println("" + u.GraphToString());
+			List<Vertex> vertices = g.getVertices();
+			List<Edge> edges = g.getEdges();
+			/*HttpBroadcastFactory httpBC = new HttpBroadcastFactory();
+			ClassTag<List<Vertex>> ctListVer = scala.reflect.ClassTag$.MODULE$.apply(List.class);
+			ClassTag<List<Edge>> ctListEdge = scala.reflect.ClassTag$.MODULE$.apply(List.class);
+			Broadcast<List<Vertex>> bcVertices = httpBC.newBroadcast(vertices, false, 0, ctListVer);
+			Broadcast<List<Edge>> bcEdges = httpBC.newBroadcast(edges, false, 1, ctListEdge);*/
+			Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
+			Broadcast<List<Edge>> bcEdges = sc.broadcast(edges);
+			
+			Utils u = new Utils(sc);
+			
+			System.out.println("" + u.GraphToString(vertices, edges));
 			
 			long lStart2 = System.currentTimeMillis();
 			
 			if (args[2].equals("-b1")) {
 				lStart2 = System.currentTimeMillis();
 				System.out.println("Sức ảnh hưởng gián tiếp của đỉnh " + args[3] + " lên đỉnh " + args[4] + " là: "
-						+ u.IndirectInfluenceOfVertexOnOtherVertex(args[3], args[4]));
+						+ u.IndirectInfluenceOfVertexOnOtherVertex(bcVertices, bcEdges, args[3], args[4]));
 			}
 
 			if (args[2].equals("-b2")) {
 				lStart2 = System.currentTimeMillis();
-				JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices();
+				JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices(bcVertices, bcEdges);
+				all.cache();
 
 				System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
 				all.foreach(tuple -> {
@@ -49,17 +62,18 @@ public class KeyPlayer {
 				});
 				
 				System.out.println("Key Player là: ");
-				System.out.println(all.first()._1 + ": " + all.first()._2.toString());
+				Tuple2<String, BigDecimal> kp = all.first();
+				System.out.println(kp._1 + ": " + kp._2.toString());
 			}
 
 			if (args[2].equals("-b3")) {
 				lStart2 = System.currentTimeMillis();
 				
 				System.out.println("Ngưỡng sức ảnh hưởng là: " + args[3]);
-				Data.theta = KeyPlayer.sc.broadcast(new BigDecimal(args[3]));
+				Data.theta = new BigDecimal(args[3]);
 				System.out.println("Ngưỡng số đỉnh chịu sức ảnh hưởng là: " + args[4]);
-				Data.iNeed = KeyPlayer.sc.broadcast(Integer.parseInt(args[4]));
-				JavaPairRDD<String, List<String>> inif = u.getIndirectInfluence();
+				Data.iNeed = Integer.parseInt(args[4]);
+				JavaPairRDD<String, List<String>> inif = u.getIndirectInfluence(bcVertices, bcEdges);
 				System.out.println("Sức ảnh hưởng vượt ngưỡng của tất cả các đỉnh:");
 
 				// In ra danh sách các đỉnh và các đỉnh chịu sức ảnh hưởng vượt
@@ -73,8 +87,8 @@ public class KeyPlayer {
 				});
 				//
 
-				String kp = u.getKeyPlayer();
-				List<String> res = u.getSmallestGroup();
+				String kp = u.getKeyPlayer(bcVertices, bcEdges);
+				List<String> res = u.getSmallestGroup(bcVertices, bcEdges);
 				System.out.println("Key Player: " + kp.toString());
 
 				System.out.println("Nhóm nhỏ nhất thỏa ngưỡng là: " + res);
