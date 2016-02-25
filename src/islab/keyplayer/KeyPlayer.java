@@ -6,17 +6,14 @@ import java.util.List;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.broadcast.HttpBroadcastFactory;
 
 import scala.Tuple2;
-import scala.reflect.ClassTag;
 
 public class KeyPlayer {
 	
 	public static void main(String[] args) {
 		
-		SparkConf conf = new SparkConf().setAppName("KeyPlayerSpark").setMaster("spark://PTNHTTT10:7077");
+		SparkConf conf = new SparkConf().setAppName("KeyPlayerSpark").setMaster("local[*]");//("spark://PTNHTTT10:7077");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 		
 		String sInputPath = "./graph_data/graph_oneline.json";
@@ -31,13 +28,6 @@ public class KeyPlayer {
 			g = data.createGraphFromJSONFile(sInputPath);
 			List<Vertex> vertices = g.getVertices();
 			List<Edge> edges = g.getEdges();
-			/*HttpBroadcastFactory httpBC = new HttpBroadcastFactory();
-			ClassTag<List<Vertex>> ctListVer = scala.reflect.ClassTag$.MODULE$.apply(List.class);
-			ClassTag<List<Edge>> ctListEdge = scala.reflect.ClassTag$.MODULE$.apply(List.class);
-			Broadcast<List<Vertex>> bcVertices = httpBC.newBroadcast(vertices, false, 0, ctListVer);
-			Broadcast<List<Edge>> bcEdges = httpBC.newBroadcast(edges, false, 1, ctListEdge);*/
-			Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
-			Broadcast<List<Edge>> bcEdges = sc.broadcast(edges);
 			
 			Utils u = new Utils(sc);
 			
@@ -48,18 +38,19 @@ public class KeyPlayer {
 			if (args[2].equals("-b1")) {
 				lStart2 = System.currentTimeMillis();
 				System.out.println("Sức ảnh hưởng gián tiếp của đỉnh " + args[3] + " lên đỉnh " + args[4] + " là: "
-						+ u.IndirectInfluenceOfVertexOnOtherVertex(bcVertices, bcEdges, args[3], args[4]));
+						+ u.IndirectInfluenceOfVertexOnOtherVertex(vertices, edges, args[3], args[4]));
 			}
 
 			if (args[2].equals("-b2")) {
 				lStart2 = System.currentTimeMillis();
-				JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices(bcVertices, bcEdges);
+				JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices(vertices, edges);
 				all.cache();
 
 				System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
-				all.foreach(tuple -> {
-					System.out.println("[ " + tuple._1 + " : " + tuple._2 + " ]");
-				});
+				List<Tuple2<String, BigDecimal>> listAll = all.collect();
+				for (Tuple2<String, BigDecimal> tuple : listAll) {
+					System.out.println("[ " + tuple._1 + " : " + tuple._2.toString() + " ]");
+				}
 				
 				System.out.println("Key Player là: ");
 				Tuple2<String, BigDecimal> kp = all.first();
@@ -73,7 +64,7 @@ public class KeyPlayer {
 				Data.theta = new BigDecimal(args[3]);
 				System.out.println("Ngưỡng số đỉnh chịu sức ảnh hưởng là: " + args[4]);
 				Data.iNeed = Integer.parseInt(args[4]);
-				JavaPairRDD<String, List<String>> inif = u.getIndirectInfluence(bcVertices, bcEdges);
+				JavaPairRDD<String, List<String>> inif = u.getIndirectInfluence(vertices, edges);
 				System.out.println("Sức ảnh hưởng vượt ngưỡng của tất cả các đỉnh:");
 
 				// In ra danh sách các đỉnh và các đỉnh chịu sức ảnh hưởng vượt
@@ -87,9 +78,9 @@ public class KeyPlayer {
 				});
 				//
 
-				String kp = u.getKeyPlayer(bcVertices, bcEdges);
-				List<String> res = u.getSmallestGroup(bcVertices, bcEdges);
-				System.out.println("Key Player: " + kp.toString());
+				String kp = u.getTheMostOverThresholdVertexName(vertices, edges);
+				List<String> res = u.getSmallestGroup(vertices, edges);
+				System.out.println("Đỉnh có sức ảnh hưỡng vượt ngưỡng đến các đỉnh khác nhiều nhất là: " + kp.toString());
 
 				System.out.println("Nhóm nhỏ nhất thỏa ngưỡng là: " + res);
 			}

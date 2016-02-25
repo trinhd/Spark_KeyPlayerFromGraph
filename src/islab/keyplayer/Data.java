@@ -136,7 +136,7 @@ public class Data {//implements Function<String, Graph> {
 			System.out.println(
 					"-----------------------------------------------------------------------------------------");
 		}
-		System.out.println("--------------------------------->>>>>>Số đỉnh đồ thị là: " + g.countVertex());
+		System.out.println("Số đỉnh đồ thị là: " + g.countVertex());
 		return g;
 	}
 
