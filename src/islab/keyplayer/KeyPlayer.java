@@ -13,7 +13,7 @@ public class KeyPlayer {
 	
 	public static void main(String[] args) {
 		
-		SparkConf conf = new SparkConf().setAppName("KeyPlayerSpark").setMaster("local[*]");//("spark://PTNHTTT10:7077");
+		SparkConf conf = new SparkConf().setAppName("KeyPlayerSpark").setMaster("spark://PTNHTTT10:7077");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 		
 		String sInputPath = "./graph_data/graph_oneline.json";
