@@ -131,9 +131,10 @@ public class Utils implements Serializable{
 					temp.add(sCandidate);
 					explored.add(sCandidate);
 					if (sCandidate.equals(sEnd)) {
-						List<String> onePath = new ArrayList<String>();
-						cloneStringList(temp, onePath);
-						result.add(onePath);
+						//List<String> onePath = new ArrayList<String>(temp.size());
+						//cloneStringList(temp, onePath);
+						//onePath = (List<String>)(((ArrayList<String>)temp).clone());
+						result.add((List<String>)(((ArrayList<String>)temp).clone()));
 						explored.remove(sCandidate);
 						temp.remove(sCandidate);
 						while (!iCandidate.isEmpty() && iCandidate.get(iCandidate.size() - 1) == 0) {
@@ -233,7 +234,7 @@ public class Utils implements Serializable{
 	}
 
 	public JavaPairRDD<String, BigDecimal> getAllInfluenceOfVertices(List<Vertex> vertices, List<Edge> edges) {
-		List<Tuple2<BigDecimal, String>> mUnsortedAll = new ArrayList<Tuple2<BigDecimal, String>>();
+		List<Tuple2<BigDecimal, String>> mUnsortedAll = new ArrayList<Tuple2<BigDecimal, String>>(vertices.size());
 		//List<Vertex> vertices = bcVertices.value().collect();
 		
 		for (Vertex vertex : vertices) {
@@ -341,11 +342,11 @@ public class Utils implements Serializable{
 		} while (i != 0 && result == null);
 	}
 	
-	private void cloneStringList(List<String> scr, List<String> des) {
+	/*private void cloneStringList(List<String> scr, List<String> des) {
 		for (String item : scr) {
 			des.add(item);
 		}
-	}
+	}*/
 	
 	public String GraphToString(List<Vertex> vertices, List<Edge> edges){		
 		String sResult = new String("Vertices:");

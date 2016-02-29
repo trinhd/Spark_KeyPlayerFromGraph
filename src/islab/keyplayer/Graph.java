@@ -13,6 +13,11 @@ public class Graph implements Serializable {
 		this.edges = new ArrayList<Edge>();
 	}
 	
+	public Graph(int iCountVertex, int iCountEdge) {
+		this.vertices = new ArrayList<Vertex>(iCountVertex);
+		this.edges = new ArrayList<Edge>(iCountEdge);
+	}
+	
 	public void addVertex(Vertex vertex) {
 		vertices.add(vertex);
 	}

@@ -75,7 +75,7 @@ public class Data {//implements Function<String, Graph> {
 	}
 	
 	public Graph createGraphFromJSONFile(String sPath) {
-		Graph g = new Graph();
+		Graph g = null;
 		Gson gson = new Gson();
 
 		try {
@@ -92,7 +92,9 @@ public class Data {//implements Function<String, Graph> {
 			JsonArray jaVertices = objects.getAsJsonArray("vertices");
 			// Tach lay cac Canh (Edge)
 			JsonArray jaEdges = objects.getAsJsonArray("edges");
-
+			
+			g = new Graph(jaVertices.size(), jaEdges.size());
+			
 			// Tao mot dai dien cho kieu Map<String, BigDecimal> de deserialize
 			// nhan dien
 			Type typeSpreadCoefficient = new TypeToken<HashMap<String, BigDecimal>>() {
