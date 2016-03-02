@@ -324,19 +324,23 @@ public class Utils implements Serializable{
 		
 		final Broadcast<BigDecimal> bcTheta = sc.broadcast(Data.theta);
 		
-		JavaPairRDD<String,List<String>> OverThresholdVertex = rddIndrInfl.filter(tuple -> {
+		/*JavaPairRDD<String,List<String>> OverThresholdVertex = rddIndrInfl.filter(tuple -> {
 			return (tuple._2.compareTo(bcTheta.value()) != -1);
 		}).mapToPair(pairSB ->{
-			return new Tuple2<String, List<String>>(bcVertexName.value(), Arrays.asList(pairSB._1));
+			return new Tuple2<String, List<String>>(bcVertexName.value(), new ArrayList<String>(Arrays.asList(pairSB._1)));
 		}).reduceByKey((l1, l2) -> {
 			l1.addAll(l2);
 			return l1;
-		});
+		});*/
+		
+		JavaPairRDD<String,List<String>> OverThresholdVertex = sc.parallelizePairs(Arrays.asList(new Tuple2<String,List<String>>(sVertexName, rddIndrInfl.filter(tuple -> {
+			return (tuple._2.compareTo(bcTheta.value()) != -1);
+		}).keys().collect())));
 		
 		if (indirectInfluence != null) {
-			if (indirectInfluence.lookup(sVertexName).isEmpty()) {
+			//if (indirectInfluence.lookup(sVertexName).isEmpty()) {
 				indirectInfluence = indirectInfluence.union(OverThresholdVertex);
-			}
+			//}
 		} else {
 			indirectInfluence = OverThresholdVertex;
 		}
