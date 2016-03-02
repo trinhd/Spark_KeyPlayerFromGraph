@@ -10,8 +10,10 @@ import java.util.Map;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.broadcast.Broadcast;
 
+import akka.japi.Pair;
 import scala.Tuple2;
 
 public class Utils implements Serializable{
@@ -176,7 +178,7 @@ public class Utils implements Serializable{
 	public BigDecimal IndirectInfluenceOfVertexOnOtherVertex(List<Vertex> vertices, List<Edge> edges, String sStartName, String sEndName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
 		
-		final Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
+		/*final Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
 		final Broadcast<List<Edge>> bcEdges =  sc.broadcast(edges);
 				
 		List<List<String>> listPath = getAllPathBetweenTwoVertex(bcEdges.value(), sStartName, sEndName);
@@ -201,14 +203,81 @@ public class Utils implements Serializable{
 					return bdTemp;
 				}).reduce((bd1, bd2) -> bd1.add(bd2));
 			}
+		}*/
+		
+		List<String> temp = new ArrayList<String>();
+		List<String> explored = new ArrayList<String>(); // danh dau nhung dinh
+															// da tham
+
+		temp.add(sStartName); // tham S
+		explored.add(sStartName); // danh dau S da tham
+		List<String> listCandidate = getVerticesPointedByVertex(edges, sStartName);
+		List<Integer> iCandidate = new ArrayList<Integer>();
+		if (listCandidate != null) {
+			iCandidate.add(listCandidate.size());
+
+			while (!listCandidate.isEmpty()) {
+				int iCount = listCandidate.size();
+				String sCandidate = listCandidate.remove(iCount - 1);
+				int iLast = iCandidate.size() - 1;
+				iCandidate.set(iLast, iCandidate.get(iLast) - 1);
+				if (!explored.contains(sCandidate)) {
+					temp.add(sCandidate);
+					explored.add(sCandidate);
+					if (sCandidate.equals(sEndName)) {
+						String sBefore = null;
+						for (String v : temp) {
+							if (sBefore != null) {
+								fIndirectInfluence = fIndirectInfluence.add(getVertexSpreadCoefficientFromName(vertices, v, sBefore)
+										.multiply(getEdgeDirectInfluenceFromStartEndVertex(edges, sBefore, v)));
+								if (fIndirectInfluence.compareTo(BigDecimal.ONE) != -1) {
+									return BigDecimal.ONE;
+								}
+							}
+							sBefore = v;
+						}
+						explored.remove(sCandidate);
+						temp.remove(sCandidate);
+						while (!iCandidate.isEmpty() && iCandidate.get(iCandidate.size() - 1) == 0) {
+							temp.remove(temp.size() - 1);
+							explored.remove(explored.size() - 1);
+							iCandidate.remove(iCandidate.size() - 1);
+						}
+					} else {
+						List<String> listNewCandidate = getVerticesPointedByVertex(edges, sCandidate);
+						if (listNewCandidate != null && !listNewCandidate.isEmpty()) {
+							listCandidate.addAll(listNewCandidate);
+							iCandidate.add(listNewCandidate.size());
+						} else {
+							temp.remove(sCandidate);
+							explored.remove(sCandidate);
+							while (iCandidate.get(iCandidate.size() - 1) == 0) {
+								temp.remove(temp.size() - 1);
+								explored.remove(explored.size() - 1);
+								iCandidate.remove(iCandidate.size() - 1);
+								if (iCandidate.isEmpty()){
+									break;
+								}
+							}
+						}
+					}
+				} else {
+					while (!iCandidate.isEmpty() && iCandidate.get(iCandidate.size() - 1) == 0) {
+						temp.remove(temp.size() - 1);
+						explored.remove(explored.size() - 1);
+						iCandidate.remove(iCandidate.size() - 1);
+					}
+				}
+			}
 		}
 
-		return (fIndirectInfluence.compareTo(BigDecimal.ONE) == 1) ? BigDecimal.ONE : fIndirectInfluence;
+		//return (fIndirectInfluence.compareTo(BigDecimal.ONE) == 1) ? BigDecimal.ONE : fIndirectInfluence;
+		return fIndirectInfluence;
 	}
 	
 	private BigDecimal IndirectInfluenceOfVertexOnAllVertex(List<Vertex> vertices, List<Edge> edges, String sVertexName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
-		List<String> OverThresholdVertex = new ArrayList<String>();
+		/*List<String> OverThresholdVertex = new ArrayList<String>();
 				
 		for (Vertex vertex : vertices) {
 			String vName = vertex.getName();
@@ -230,7 +299,49 @@ public class Utils implements Serializable{
 			indirectInfluence = sc.parallelizePairs(
 					Arrays.asList(new Tuple2<String, List<String>>(sVertexName, OverThresholdVertex)));//accOverThresholdVertex.value())));
 		}
-		return fIndirectInfluence;//accBD.value();
+		return fIndirectInfluence;//accBD.value();*/
+		
+		final Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
+		final Broadcast<List<Edge>> bcEdges =  sc.broadcast(edges);
+		final Broadcast<String> bcVertexName = sc.broadcast(sVertexName);
+		
+		JavaRDD<Vertex> rddVertices = sc.parallelize(vertices);
+		//rddVertices.cache();
+		
+		JavaPairRDD<String, BigDecimal> rddIndrInfl = rddVertices.mapToPair(vertex -> {
+			String vName = vertex.getName();
+			if (!vName.equals(bcVertexName.value())) {
+				BigDecimal bd = IndirectInfluenceOfVertexOnOtherVertex(bcVertices.value(), bcEdges.value(), bcVertexName.value(), vName);
+				return new Tuple2<String, BigDecimal>(vName, bd);
+			}
+			else {
+				return new Tuple2<String, BigDecimal>(vName, BigDecimal.ZERO);
+			}
+		});
+		rddIndrInfl.cache();
+		
+		fIndirectInfluence = rddIndrInfl.values().reduce((bd1, bd2) -> bd1.add(bd2));
+		
+		final Broadcast<BigDecimal> bcTheta = sc.broadcast(Data.theta);
+		
+		JavaPairRDD<String,List<String>> OverThresholdVertex = rddIndrInfl.filter(tuple -> {
+			return (tuple._2.compareTo(bcTheta.value()) != -1);
+		}).mapToPair(pairSB ->{
+			return new Tuple2<String, List<String>>(bcVertexName.value(), Arrays.asList(pairSB._1));
+		}).reduceByKey((l1, l2) -> {
+			l1.addAll(l2);
+			return l1;
+		});
+		
+		if (indirectInfluence != null) {
+			if (indirectInfluence.lookup(sVertexName).isEmpty()) {
+				indirectInfluence = indirectInfluence.union(OverThresholdVertex);
+			}
+		} else {
+			indirectInfluence = OverThresholdVertex;
+		}
+		
+		return fIndirectInfluence;
 	}
 
 	public JavaPairRDD<String, BigDecimal> getAllInfluenceOfVertices(List<Vertex> vertices, List<Edge> edges) {
