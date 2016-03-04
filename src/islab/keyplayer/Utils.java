@@ -231,11 +231,13 @@ public class Utils implements Serializable{
 								fIndirectInfluence = fIndirectInfluence.add(getVertexSpreadCoefficientFromName(vertices, v, sBefore)
 										.multiply(getEdgeDirectInfluenceFromStartEndVertex(edges, sBefore, v)));
 								if (fIndirectInfluence.compareTo(BigDecimal.ONE) != -1) {
+									System.out.println("Đường đi vừa được tính trước khi ngắt là: " + temp);
 									return BigDecimal.ONE;
 								}
 							}
 							sBefore = v;
 						}
+						System.out.println("Đường đi vừa được tính là: " + temp);
 						explored.remove(sCandidate);
 						temp.remove(sCandidate);
 						while (!iCandidate.isEmpty() && iCandidate.get(iCandidate.size() - 1) == 0) {
@@ -275,7 +277,7 @@ public class Utils implements Serializable{
 		return fIndirectInfluence;
 	}
 	
-	private BigDecimal IndirectInfluenceOfVertexOnAllVertex(List<Vertex> vertices, List<Edge> edges, String sVertexName) {
+	private BigDecimal IndirectInfluenceOfVertexOnAllVertex(List<Vertex> vertices, JavaRDD<Vertex> rddVertices, List<Edge> edges, String sVertexName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
 		/*List<String> OverThresholdVertex = new ArrayList<String>();
 				
@@ -305,7 +307,7 @@ public class Utils implements Serializable{
 		final Broadcast<List<Edge>> bcEdges =  sc.broadcast(edges);
 		final Broadcast<String> bcVertexName = sc.broadcast(sVertexName);
 		
-		JavaRDD<Vertex> rddVertices = sc.parallelize(vertices);
+		
 		//rddVertices.cache();
 		
 		JavaPairRDD<String, BigDecimal> rddIndrInfl = rddVertices.mapToPair(vertex -> {
@@ -343,6 +345,7 @@ public class Utils implements Serializable{
 			//}
 		} else {
 			indirectInfluence = OverThresholdVertex;
+			indirectInfluence.cache();
 		}
 		
 		return fIndirectInfluence;
@@ -351,10 +354,12 @@ public class Utils implements Serializable{
 	public JavaPairRDD<String, BigDecimal> getAllInfluenceOfVertices(List<Vertex> vertices, List<Edge> edges) {
 		List<Tuple2<BigDecimal, String>> mUnsortedAll = new ArrayList<Tuple2<BigDecimal, String>>(vertices.size());
 		//List<Vertex> vertices = bcVertices.value().collect();
+		JavaRDD<Vertex> rddVertices = sc.parallelize(vertices);
+		rddVertices.cache();
 		
 		for (Vertex vertex : vertices) {
 			String vName = vertex.getName();
-			mUnsortedAll.add(new Tuple2<BigDecimal, String>(IndirectInfluenceOfVertexOnAllVertex(vertices, edges, vName), vName));
+			mUnsortedAll.add(new Tuple2<BigDecimal, String>(IndirectInfluenceOfVertexOnAllVertex(vertices, rddVertices, edges, vName), vName));
 		}
 		
 		return sc.parallelizePairs(mUnsortedAll).sortByKey(false).mapToPair(t -> t.swap());
