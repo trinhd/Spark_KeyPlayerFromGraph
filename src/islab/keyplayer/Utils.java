@@ -248,7 +248,7 @@ public class Utils implements Serializable{
 		List<Edge> whetherOneEdge = getEdgesEndAtVertex(edges, sEndName);
 		while (whetherOneEdge.size() <= 1) {
 			if (whetherOneEdge.size() == 0) {
-				return null;
+				return BigDecimal.ZERO;
 			}
 			else {
 				String sStart = whetherOneEdge.get(0).getStartVertexName();
