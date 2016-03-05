@@ -116,6 +116,33 @@ public class Utils implements Serializable{
 		List<String> temp = new ArrayList<String>();
 		List<String> explored = new ArrayList<String>(); // danh dau nhung dinh
 															// da tham
+		
+		List<String> endpath = new ArrayList<String>();
+		endpath.add(sEnd);
+		boolean fChangeEnd = false;
+		List<Edge> whetherOneEdge = getEdgesEndAtVertex(edges, sEnd);
+		while (whetherOneEdge.size() <= 1) {
+			if (whetherOneEdge.size() == 0) {
+				return null;
+			}
+			else {
+				String sStartName = whetherOneEdge.get(0).getStartVertexName();
+				fChangeEnd = true;
+				endpath.add(0, sStartName);
+				if (sStartName.equals(sStart)){
+					return Arrays.asList(endpath);
+				} else{
+					sEnd = sStartName;
+					whetherOneEdge = getEdgesEndAtVertex(edges, sEnd);
+				}
+			}
+		}
+		if (fChangeEnd){
+			endpath.remove(0);
+		}
+		else {
+			endpath.clear();
+		}
 
 		temp.add(sStart); // tham S
 		explored.add(sStart); // danh dau S da tham
@@ -136,7 +163,13 @@ public class Utils implements Serializable{
 						//List<String> onePath = new ArrayList<String>(temp.size());
 						//cloneStringList(temp, onePath);
 						//onePath = (List<String>)(((ArrayList<String>)temp).clone());
-						result.add((List<String>)(((ArrayList<String>)temp).clone()));
+						if (fChangeEnd) {
+							temp.addAll(endpath);
+							result.add((List<String>) (((ArrayList<String>) temp).clone()));
+							temp.removeAll(endpath);
+						} else {
+							result.add((List<String>) (((ArrayList<String>) temp).clone()));
+						}
 						explored.remove(sCandidate);
 						temp.remove(sCandidate);
 						while (!iCandidate.isEmpty() && iCandidate.get(iCandidate.size() - 1) == 0) {
@@ -208,6 +241,46 @@ public class Utils implements Serializable{
 		List<String> temp = new ArrayList<String>();
 		List<String> explored = new ArrayList<String>(); // danh dau nhung dinh
 															// da tham
+		
+		List<String> endpath = new ArrayList<String>();
+		endpath.add(sEndName);
+		boolean fChangeEnd = false;
+		List<Edge> whetherOneEdge = getEdgesEndAtVertex(edges, sEndName);
+		while (whetherOneEdge.size() <= 1) {
+			if (whetherOneEdge.size() == 0) {
+				return null;
+			}
+			else {
+				String sStart = whetherOneEdge.get(0).getStartVertexName();
+				endpath.add(0, sStart);
+				if (sStart.equals(sStartName)){
+					String sBefore = null;
+					for (String v : endpath) {
+						if (sBefore != null) {
+							fIndirectInfluence = fIndirectInfluence.add(getVertexSpreadCoefficientFromName(vertices, v, sBefore)
+									.multiply(getEdgeDirectInfluenceFromStartEndVertex(edges, sBefore, v)));
+							if (fIndirectInfluence.compareTo(BigDecimal.ONE) != -1) {
+								System.out.println("Đường đi duy nhất vừa được tính trước khi ngắt là: " + endpath);
+								return BigDecimal.ONE;
+							}
+						}
+						sBefore = v;
+					}
+					System.out.println("Đường đi duy nhất vừa được tính là: " + endpath);
+					return fIndirectInfluence;
+				} else{
+					fChangeEnd = true;
+					sEndName = sStart;
+					whetherOneEdge = getEdgesEndAtVertex(edges, sEndName);
+				}
+			}
+		}
+		if (fChangeEnd){
+			endpath.remove(0);
+		}
+		else {
+			endpath.clear();
+		}
 
 		temp.add(sStartName); // tham S
 		explored.add(sStartName); // danh dau S da tham
@@ -225,6 +298,10 @@ public class Utils implements Serializable{
 					temp.add(sCandidate);
 					explored.add(sCandidate);
 					if (sCandidate.equals(sEndName)) {
+						if (fChangeEnd) {
+							temp.addAll(endpath);
+						}
+						
 						String sBefore = null;
 						for (String v : temp) {
 							if (sBefore != null) {
@@ -238,6 +315,11 @@ public class Utils implements Serializable{
 							sBefore = v;
 						}
 						System.out.println("Đường đi vừa được tính là: " + temp);
+						
+						if (fChangeEnd){
+							temp.removeAll(endpath);
+						}
+						
 						explored.remove(sCandidate);
 						temp.remove(sCandidate);
 						while (!iCandidate.isEmpty() && iCandidate.get(iCandidate.size() - 1) == 0) {
