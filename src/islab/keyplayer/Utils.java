@@ -359,7 +359,7 @@ public class Utils implements Serializable{
 		return fIndirectInfluence;
 	}
 	
-	private BigDecimal IndirectInfluenceOfVertexOnAllVertex(List<Vertex> vertices, JavaRDD<Vertex> rddVertices, List<Edge> edges, String sVertexName) {
+	public BigDecimal IndirectInfluenceOfVertexOnAllVertex(List<Vertex> vertices, JavaRDD<Vertex> rddVertices, List<Edge> edges, String sVertexName) {
 		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
 		/*List<String> OverThresholdVertex = new ArrayList<String>();
 				

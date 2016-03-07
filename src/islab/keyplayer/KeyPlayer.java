@@ -84,6 +84,12 @@ public class KeyPlayer {
 
 				System.out.println("Nhóm nhỏ nhất thỏa ngưỡng là: " + res);
 			}
+			
+			if (args[2].equals("-ii")){
+				lStart2 = System.currentTimeMillis();
+				System.out.println("Sức ảnh hưởng gián tiếp của đỉnh " + args[3] + " là: "
+						+ u.IndirectInfluenceOfVertexOnAllVertex(vertices, sc.parallelize(vertices), edges, args[3]));
+			}
 
 			long lEnd = System.currentTimeMillis();
 
