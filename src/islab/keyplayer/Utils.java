@@ -248,6 +248,7 @@ public class Utils implements Serializable{
 		List<Edge> whetherOneEdge = getEdgesEndAtVertex(edges, sEndName);
 		while (whetherOneEdge.size() <= 1) {
 			if (whetherOneEdge.size() == 0) {
+				System.out.println("Không có đường đi từ đỉnh " + sStartName + " đến đỉnh " + sEndName);
 				return BigDecimal.ZERO;
 			}
 			else {
@@ -399,6 +400,7 @@ public class Utils implements Serializable{
 				return new Tuple2<String, BigDecimal>(vName, bd);
 			}
 			else {
+				System.out.println("Sức ảnh hưởng gián tiếp đến chính đỉnh đó là 0.");
 				return new Tuple2<String, BigDecimal>(vName, BigDecimal.ZERO);
 			}
 		});
