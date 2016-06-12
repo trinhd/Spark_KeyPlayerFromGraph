@@ -10,6 +10,8 @@ import java.util.Map;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.broadcast.Broadcast;
 
@@ -568,5 +570,51 @@ public class Utils implements Serializable{
 			sResult += "Start: " + edge.getStartVertexName() + ", End: " + edge.getEndVertexName() + ", DirectInfluence: " + edge.getDirectInfluence().toString() + "\n";
 		}
 		return sResult;
+	}
+	
+	public List<Segment> getSegmentFromEdges(List<Vertex> vertices, List<Edge> edges){
+		JavaRDD<Edge> rddEdges = sc.parallelize(edges);
+		final Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
+		
+		JavaRDD<Segment> rddSegments = rddEdges.map(edge -> {
+			String sEndVertex = edge.getEndVertexName();
+			String sStartVertex = edge.getStartVertexName();
+			List<Vertex> tempList = bcVertices.value();
+			BigDecimal bd = BigDecimal.ZERO;
+			for (Vertex vertex : tempList) {
+				if (vertex.getName().equals(sEndVertex)){
+					bd = edge.getDirectInfluence().multiply(vertex.getSpreadCoefficientFromVertexName(sStartVertex));
+					break;
+				}
+			}
+			return new Segment(sStartVertex, sEndVertex, bd);
+		});
+		
+		return rddSegments.collect();
+	}
+	
+	public List<Segment> getPathFromSegment(JavaRDD<Segment> rddSegments, Broadcast<List<Segment>> bcOneSegmentList, Broadcast<List<Vertex>> bcVertices){
+		JavaRDD<Segment> rddResult = rddSegments.flatMap(new FlatMapFunction<Segment, Segment>() {
+
+			@Override
+			public Iterable<Segment> call(Segment seg){
+				// TODO Auto-generated method stub
+				List<Segment> listResult = new ArrayList<Segment>();
+				List<Segment> listOneSegment = bcOneSegmentList.value();
+				String sSeqEndVertex = seg.getEndVertex();
+				ArrayList<String> segArrHistory = (ArrayList<String>)seg.getHistory().clone();
+				for (Segment s : listOneSegment) {
+					String sStart = s.getStartVertex();
+					if ((sStart.equals(sSeqEndVertex)) && !(segArrHistory.contains(sStart))){
+						String sEnd = s.getEndVertex();
+						segArrHistory.add(sStart);
+						listResult.add(new Segment(seg.getStartVertex(), sEnd, seg.getIndirectInfluence().multiply(s.getIndirectInfluence()), segArrHistory));
+					}
+				}
+				if (listResult.isEmpty()) return null;
+				else return listResult;
+			}
+		});
+		return rddResult.collect();
 	}
 }

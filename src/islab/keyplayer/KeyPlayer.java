@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.broadcast.Broadcast;
 
 import scala.Tuple2;
 
@@ -27,6 +28,7 @@ public class KeyPlayer {
 			Data data = new Data();
 			g = data.createGraphFromJSONFile(sInputPath);
 			List<Vertex> vertices = g.getVertices();
+			int iVertexNum = vertices.size();
 			List<Edge> edges = g.getEdges();
 			
 			Utils u = new Utils(sc);
@@ -43,7 +45,8 @@ public class KeyPlayer {
 
 			if (args[2].equals("-b2")) {
 				lStart2 = System.currentTimeMillis();
-				JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices(vertices, edges);
+				//Cách 1
+				/*JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices(vertices, edges);
 				all.cache();
 
 				System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
@@ -54,7 +57,26 @@ public class KeyPlayer {
 				
 				System.out.println("Key Player là: ");
 				Tuple2<String, BigDecimal> kp = all.first();
-				System.out.println(kp._1 + ": " + kp._2.toString());
+				System.out.println(kp._1 + ": " + kp._2.toString());*/
+				
+				//Cách 2
+				List<Segment> listOneSegment = u.getSegmentFromEdges(vertices, edges);
+				MongoDBSpark mongospark = new MongoDBSpark();
+				mongospark.insertSegmentToMongoDB(listOneSegment);
+				int iSegmentLevel = 2;
+				List<Segment> listSegment = listOneSegment;
+				Broadcast<List<Segment>> bcOneSegment = sc.broadcast(listOneSegment);
+				Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
+				while (iSegmentLevel < iVertexNum){
+					listSegment = u.getPathFromSegment(sc.parallelize(listSegment), bcOneSegment, bcVertices);
+					if (listSegment.isEmpty()) {
+						break;
+					}
+					else {
+						mongospark.insertSegmentToMongoDB(listSegment);
+						iSegmentLevel++;
+					}
+				}
 			}
 
 			if (args[2].equals("-b3")) {
