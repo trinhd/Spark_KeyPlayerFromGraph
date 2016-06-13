@@ -1,0 +1,7 @@
+reset
+
+./sbin/start-all.sh
+
+./bin/spark-submit --class islab.keyplayer.KeyPlayer --total-executor-cores 40 --driver-memory 2560M --executor-memory 2560M /home/duytri/Desktop/testkp/keyplayer.jar -in /home/duytri/Desktop/testkp/graph50.json -b2 c1 > ~/Desktop/result_c1
+
+./sbin/stop-all.sh

@@ -617,17 +617,22 @@ public class Utils implements Serializable{
 	}
 	
 	public BigDecimal getVertexIndirectInfluenceFromAllPath(List<Tuple2<String, BigDecimal>> allVertexPath){
-		JavaPairRDD<String, BigDecimal> rddVertexPath = sc.parallelizePairs(allVertexPath).mapToPair((tuple0) -> {
-			return new Tuple2<String, BigDecimal>(tuple0._1, BigDecimal.ONE.subtract(tuple0._2));
-		});
-		BigDecimal bdResult = rddVertexPath.reduceByKey((val0 ,val1)  -> {
-			return val0.multiply(val1);
-		}).map(pair -> {
-			return BigDecimal.ONE.subtract(pair._2);
-		}).reduce((bd0, bd1) -> {
-			return bd0.add(bd1);
-		});
-		
-		return bdResult;
+		if (!allVertexPath.isEmpty()) {
+			JavaPairRDD<String, BigDecimal> rddVertexPath = sc.parallelizePairs(allVertexPath).mapToPair((tuple0) -> {
+				return new Tuple2<String, BigDecimal>(tuple0._1, BigDecimal.ONE.subtract(tuple0._2));
+			});
+			BigDecimal bdResult = rddVertexPath.reduceByKey((val0, val1) -> {
+				return val0.multiply(val1);
+			}).map(pair -> {
+				return BigDecimal.ONE.subtract(pair._2);
+			}).reduce((bd0, bd1) -> {
+				return bd0.add(bd1);
+			});
+
+			return bdResult;
+		}
+		else {
+			return BigDecimal.ZERO;
+		}
 	}
 }
