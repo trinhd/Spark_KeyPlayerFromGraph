@@ -597,13 +597,14 @@ public class Utils implements Serializable{
 			List<Segment> listResult = new ArrayList<Segment>();
 			List<Segment> listOneSegment = bcOneSegmentList.value();
 			String sSeqEndVertex = seg.getEndVertex();
+			String sSegStartVertex = seg.getStartVertex();
 			ArrayList<String> segArrHistory = (ArrayList<String>)seg.getHistory().clone();
 			for (Segment s : listOneSegment) {
 				String sStart = s.getStartVertex();
-				if ((sStart.equals(sSeqEndVertex)) && !(segArrHistory.contains(sStart))){
-					String sEnd = s.getEndVertex();
+				String sEnd = s.getEndVertex();
+				if ((sStart.equals(sSeqEndVertex)) && !(segArrHistory.contains(sStart)) && !(sEnd.equals(sSegStartVertex))){
 					segArrHistory.add(sStart);
-					listResult.add(new Segment(seg.getStartVertex(), sEnd, seg.getIndirectInfluence().multiply(s.getIndirectInfluence()), segArrHistory));
+					listResult.add(new Segment(sSegStartVertex, sEnd, seg.getIndirectInfluence().multiply(s.getIndirectInfluence()), segArrHistory));
 				}
 			}
 			/*if (listResult.isEmpty()){
