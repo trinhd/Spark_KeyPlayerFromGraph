@@ -10,12 +10,8 @@ import java.util.Map;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.broadcast.Broadcast;
 
-import akka.japi.Pair;
 import scala.Tuple2;
 
 public class Utils implements Serializable{
@@ -211,7 +207,7 @@ public class Utils implements Serializable{
 	}
 	
 	public BigDecimal IndirectInfluenceOfVertexOnOtherVertex(List<Vertex> vertices, List<Edge> edges, String sStartName, String sEndName) {
-		BigDecimal fIndirectInfluence = BigDecimal.ZERO;
+		BigDecimal fIndirectInfluence = BigDecimal.ONE;
 		
 		/*final Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
 		final Broadcast<List<Edge>> bcEdges =  sc.broadcast(edges);
@@ -260,7 +256,7 @@ public class Utils implements Serializable{
 					String sBefore = null;
 					for (String v : endpath) {
 						if (sBefore != null) {
-							fIndirectInfluence = fIndirectInfluence.add(getVertexSpreadCoefficientFromName(vertices, v, sBefore)
+							fIndirectInfluence = fIndirectInfluence.multiply(getVertexSpreadCoefficientFromName(vertices, v, sBefore)
 									.multiply(getEdgeDirectInfluenceFromStartEndVertex(edges, sBefore, v)));
 							if (fIndirectInfluence.compareTo(BigDecimal.ONE) != -1) {
 								System.out.println("Đường đi duy nhất vừa được tính trước khi ngắt là: " + endpath);
@@ -306,17 +302,19 @@ public class Utils implements Serializable{
 						}
 						
 						String sBefore = null;
+						BigDecimal bdPartial = BigDecimal.ONE;
 						for (String v : temp) {
 							if (sBefore != null) {
-								fIndirectInfluence = fIndirectInfluence.add(getVertexSpreadCoefficientFromName(vertices, v, sBefore)
+								bdPartial = bdPartial.multiply(getVertexSpreadCoefficientFromName(vertices, v, sBefore)
 										.multiply(getEdgeDirectInfluenceFromStartEndVertex(edges, sBefore, v)));
-								if (fIndirectInfluence.compareTo(BigDecimal.ONE) != -1) {
+								/*if (fIndirectInfluence.compareTo(BigDecimal.ONE) != -1) {
 									System.out.println("Đường đi vừa được tính trước khi ngắt là: " + temp);
 									return BigDecimal.ONE;
-								}
+								}*/
 							}
 							sBefore = v;
 						}
+						fIndirectInfluence = fIndirectInfluence.multiply(BigDecimal.ONE.subtract(bdPartial));
 						System.out.println("Đường đi vừa được tính là: " + temp);
 						
 						if (fChangeEnd){
@@ -359,7 +357,7 @@ public class Utils implements Serializable{
 		}
 
 		//return (fIndirectInfluence.compareTo(BigDecimal.ONE) == 1) ? BigDecimal.ONE : fIndirectInfluence;
-		return fIndirectInfluence;
+		return BigDecimal.ONE.subtract(fIndirectInfluence);
 	}
 	
 	public BigDecimal IndirectInfluenceOfVertexOnAllVertex(List<Vertex> vertices, JavaRDD<Vertex> rddVertices, List<Edge> edges, String sVertexName) {
@@ -594,27 +592,42 @@ public class Utils implements Serializable{
 	}
 	
 	public List<Segment> getPathFromSegment(JavaRDD<Segment> rddSegments, Broadcast<List<Segment>> bcOneSegmentList, Broadcast<List<Vertex>> bcVertices){
-		JavaRDD<Segment> rddResult = rddSegments.flatMap(new FlatMapFunction<Segment, Segment>() {
-
-			@Override
-			public Iterable<Segment> call(Segment seg){
-				// TODO Auto-generated method stub
-				List<Segment> listResult = new ArrayList<Segment>();
-				List<Segment> listOneSegment = bcOneSegmentList.value();
-				String sSeqEndVertex = seg.getEndVertex();
-				ArrayList<String> segArrHistory = (ArrayList<String>)seg.getHistory().clone();
-				for (Segment s : listOneSegment) {
-					String sStart = s.getStartVertex();
-					if ((sStart.equals(sSeqEndVertex)) && !(segArrHistory.contains(sStart))){
-						String sEnd = s.getEndVertex();
-						segArrHistory.add(sStart);
-						listResult.add(new Segment(seg.getStartVertex(), sEnd, seg.getIndirectInfluence().multiply(s.getIndirectInfluence()), segArrHistory));
-					}
+		JavaRDD<Segment> rddResult = rddSegments.flatMap(seg -> {
+			// TODO Auto-generated method stub
+			List<Segment> listResult = new ArrayList<Segment>();
+			List<Segment> listOneSegment = bcOneSegmentList.value();
+			String sSeqEndVertex = seg.getEndVertex();
+			ArrayList<String> segArrHistory = (ArrayList<String>)seg.getHistory().clone();
+			for (Segment s : listOneSegment) {
+				String sStart = s.getStartVertex();
+				if ((sStart.equals(sSeqEndVertex)) && !(segArrHistory.contains(sStart))){
+					String sEnd = s.getEndVertex();
+					segArrHistory.add(sStart);
+					listResult.add(new Segment(seg.getStartVertex(), sEnd, seg.getIndirectInfluence().multiply(s.getIndirectInfluence()), segArrHistory));
 				}
-				if (listResult.isEmpty()) return null;
-				else return listResult;
 			}
+			/*if (listResult.isEmpty()){
+				return null;
+			}
+			else{*/
+				return listResult;
+			//}
 		});
 		return rddResult.collect();
+	}
+	
+	public BigDecimal getVertexIndirectInfluenceFromAllPath(List<Tuple2<String, BigDecimal>> allVertexPath){
+		JavaPairRDD<String, BigDecimal> rddVertexPath = sc.parallelizePairs(allVertexPath).mapToPair((tuple0) -> {
+			return new Tuple2<String, BigDecimal>(tuple0._1, BigDecimal.ONE.subtract(tuple0._2));
+		});
+		BigDecimal bdResult = rddVertexPath.reduceByKey((val0 ,val1)  -> {
+			return val0.multiply(val1);
+		}).map(pair -> {
+			return BigDecimal.ONE.subtract(pair._2);
+		}).reduce((bd0, bd1) -> {
+			return bd0.add(bd1);
+		});
+		
+		return bdResult;
 	}
 }

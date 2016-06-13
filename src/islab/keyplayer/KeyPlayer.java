@@ -46,36 +46,56 @@ public class KeyPlayer {
 			if (args[2].equals("-b2")) {
 				lStart2 = System.currentTimeMillis();
 				//Cách 1
-				/*JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices(vertices, edges);
-				all.cache();
+				if (args[3].equals("c1")) {
+					JavaPairRDD<String, BigDecimal> all = u.getAllInfluenceOfVertices(vertices, edges);
+					all.cache();
 
-				System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
-				List<Tuple2<String, BigDecimal>> listAll = all.collect();
-				for (Tuple2<String, BigDecimal> tuple : listAll) {
-					System.out.println("[ " + tuple._1 + " : " + tuple._2.toString() + " ]");
+					System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
+					List<Tuple2<String, BigDecimal>> listAll = all.collect();
+					for (Tuple2<String, BigDecimal> tuple : listAll) {
+						System.out.println("[ " + tuple._1 + " : " + tuple._2.toString() + " ]");
+					}
+
+					System.out.println("Key Player là: ");
+					Tuple2<String, BigDecimal> kp = all.first();
+					System.out.println(kp._1 + ": " + kp._2.toString());
 				}
-				
-				System.out.println("Key Player là: ");
-				Tuple2<String, BigDecimal> kp = all.first();
-				System.out.println(kp._1 + ": " + kp._2.toString());*/
-				
 				//Cách 2
-				List<Segment> listOneSegment = u.getSegmentFromEdges(vertices, edges);
-				MongoDBSpark mongospark = new MongoDBSpark();
-				mongospark.insertSegmentToMongoDB(listOneSegment);
-				int iSegmentLevel = 2;
-				List<Segment> listSegment = listOneSegment;
-				Broadcast<List<Segment>> bcOneSegment = sc.broadcast(listOneSegment);
-				Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
-				while (iSegmentLevel < iVertexNum){
-					listSegment = u.getPathFromSegment(sc.parallelize(listSegment), bcOneSegment, bcVertices);
-					if (listSegment.isEmpty()) {
-						break;
+				if (args[3].equals("c2")) {
+					List<Segment> listOneSegment = u.getSegmentFromEdges(vertices, edges);
+					MongoDBSpark mongospark = new MongoDBSpark();
+					mongospark.insertSegmentToMongoDB(listOneSegment);
+					int iSegmentLevel = 2;
+					List<Segment> listSegment = listOneSegment;
+					Broadcast<List<Segment>> bcOneSegment = sc.broadcast(listOneSegment);
+					Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
+					while (iSegmentLevel < iVertexNum) {
+						listSegment = u.getPathFromSegment(sc.parallelize(listSegment), bcOneSegment, bcVertices);
+						if (listSegment.isEmpty()) {
+							break;
+						} else {
+							mongospark.insertSegmentToMongoDB(listSegment);
+							iSegmentLevel++;
+						}
 					}
-					else {
-						mongospark.insertSegmentToMongoDB(listSegment);
-						iSegmentLevel++;
+
+					BigDecimal bdMax = BigDecimal.ZERO;
+					String sKP = "";
+					System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
+
+					for (Vertex vertex : vertices) {
+						String sVName = vertex.getName();
+						BigDecimal bdTemp = u
+								.getVertexIndirectInfluenceFromAllPath(mongospark.getVertexSegment(sVName));
+						System.out.println(sVName + ": " + bdTemp.toPlainString());
+						if (bdTemp.compareTo(bdMax) == 1) {
+							bdMax = bdTemp;
+							sKP = sVName;
+						}
 					}
+
+					System.out.println("Key Player là: ");
+					System.out.println(sKP + ": " + bdMax.toPlainString());
 				}
 			}
 
