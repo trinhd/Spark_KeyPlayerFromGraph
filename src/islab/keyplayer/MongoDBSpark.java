@@ -70,6 +70,7 @@ public class MongoDBSpark {
 			}
 		} finally {
 			cur.close();
+			MongoDBClose();
 		}
 		return allVertexPath;
 	}
