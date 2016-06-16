@@ -46,14 +46,14 @@ public class MongoDBSpark {
 
 	public void insertSegmentToMongoDB(List<Segment> segments) {
 		MongoCollection<Document> col = this.getCollection();
-		// List<Document> listDoc = new ArrayList<Document>();
+		List<Document> listDoc = new ArrayList<Document>();
 		for (Segment seg : segments) {
 			Document doc = new Document("s", seg.getStartVertex()).append("e", seg.getEndVertex()).append("i",
 					seg.getIndirectInfluence().toPlainString());
-			col.insertOne(doc);
-			// listDoc.add(doc);
+			//col.insertOne(doc);
+			listDoc.add(doc);
 		}
-		// col.insertMany(listDoc);
+		col.insertMany(listDoc);
 		MongoDBClose();
 	}
 
