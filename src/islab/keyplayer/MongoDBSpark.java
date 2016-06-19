@@ -23,7 +23,7 @@ public class MongoDBSpark {
 	private MongoClient mongoClient;
 
 	private void MongoDBConnect() {
-		mongoClient = new MongoClient("PTNHTTT10", 27017);
+		mongoClient = new MongoClient("localhost", 27017);
 	}
 
 	private void MongoDBClose() {
