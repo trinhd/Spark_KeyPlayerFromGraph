@@ -1,7 +1,9 @@
 package islab.keyplayer;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -91,6 +93,73 @@ public class KeyPlayer {
 						if (bdTemp.compareTo(bdMax) == 1) {
 							bdMax = bdTemp;
 							sKP = sVName;
+						}
+					}
+
+					System.out.println("Key Player là: ");
+					System.out.println(sKP + ": " + bdMax.toPlainString());
+				}
+				
+				if (args[3].equals("c3")) {
+					//Khởi tạo ma trận kết quả
+					Map<String[], BigDecimal> mapResult = new HashMap<String[], BigDecimal>();
+					
+					//Khởi tạo Thread lưu ma trận kết quả
+					Thread SavingThread;
+					
+					//Tính toán đoạn 1 đơn vị
+					List<Segment> listOneSegment = u.getSegmentFromEdges(vertices, edges);
+					
+					//Lưu kết quả 1 đơn vị
+					SavingThread = new MatrixResultFromSegment(mapResult, listOneSegment);
+					SavingThread.start();
+					
+					//MongoDBSpark mongospark = new MongoDBSpark();
+					//mongospark.insertSegmentToMongoDB(listOneSegment);
+					int iSegmentLevel = 2;
+					List<Segment> listSegment = listOneSegment;
+					Broadcast<List<Segment>> bcOneSegment = sc.broadcast(listOneSegment);
+					Broadcast<List<Vertex>> bcVertices = sc.broadcast(vertices);
+					while (iSegmentLevel < iVertexNum) {
+						listSegment = u.getPathFromSegment(sc.parallelize(listSegment), bcOneSegment, bcVertices);
+						if (listSegment.isEmpty()) {
+							break;
+						} else {
+							//mongospark.insertSegmentToMongoDB(listSegment);
+							if (SavingThread.isAlive()){
+								try {
+									SavingThread.join();
+								} catch (InterruptedException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+							SavingThread = new MatrixResultFromSegment(mapResult, listSegment);
+							SavingThread.start();
+							iSegmentLevel++;
+						}
+					}
+					
+					if (SavingThread.isAlive()){
+						try {
+							SavingThread.join();
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+
+					BigDecimal bdMax = BigDecimal.ZERO;
+					String sKP = "";
+					System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
+					
+					List<Tuple2<String, BigDecimal>> listInInf = u.getAllVertexInInfFromMatrix(sc.broadcast(mapResult), sc.parallelize(vertices));
+					
+					for (Tuple2<String, BigDecimal> tuple : listInInf) {
+						System.out.println(tuple._1 + ": " + tuple._2.toPlainString());
+						if (tuple._2.compareTo(bdMax) == 1){
+							bdMax = tuple._2;
+							sKP = tuple._1;
 						}
 					}
 

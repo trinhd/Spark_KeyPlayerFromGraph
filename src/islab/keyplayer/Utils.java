@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -635,5 +636,27 @@ public class Utils implements Serializable{
 		else {
 			return BigDecimal.ZERO;
 		}
+	}
+	
+	private BigDecimal getVertexIndirectInfluenceFromMatrix(Map<String[], BigDecimal> mapResult, String sVName){
+		if (!mapResult.isEmpty()) {
+			BigDecimal bdResult = BigDecimal.ZERO;
+			for (Entry<String[], BigDecimal> res : mapResult.entrySet()) {
+				if (res.getKey()[0].equals(sVName)){
+					bdResult = bdResult.add(BigDecimal.ONE.subtract(res.getValue()));
+				}
+			}
+			return bdResult;
+		}
+		else {
+			return BigDecimal.ZERO;
+		}
+	}
+	
+	public List<Tuple2<String, BigDecimal>> getAllVertexInInfFromMatrix(Broadcast<Map<String[], BigDecimal>> bcMapResult, JavaRDD<Vertex> rddVertices){
+		return rddVertices.mapToPair(vertex -> {
+			String sVName = vertex.getName();
+			return new Tuple2<String, BigDecimal>(sVName,getVertexIndirectInfluenceFromMatrix(bcMapResult.getValue(), sVName));
+		}).collect();
 	}
 }
