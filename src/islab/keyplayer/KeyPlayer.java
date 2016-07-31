@@ -16,7 +16,7 @@ public class KeyPlayer {
 	
 	public static void main(String[] args) {
 		
-		SparkConf conf = new SparkConf().setAppName("KeyPlayerSpark").setMaster("spark://xla1:7077");
+		SparkConf conf = new SparkConf().setAppName("KeyPlayerSpark").setMaster("spark://lar01:7077");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 		
 		String sInputPath = "./graph_data/graph_oneline.json";
