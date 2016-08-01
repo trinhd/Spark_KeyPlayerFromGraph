@@ -638,14 +638,18 @@ public class Utils implements Serializable{
 		}
 	}
 	
-	private BigDecimal getVertexIndirectInfluenceFromMatrix(Map<String[], BigDecimal> mapResult, String sVName){
+	private BigDecimal getVertexIndirectInfluenceFromMatrix(Map<String, Map<String, BigDecimal>> mapResult, String sVName){
 		if (!mapResult.isEmpty()) {
 			BigDecimal bdResult = BigDecimal.ZERO;
-			for (Entry<String[], BigDecimal> res : mapResult.entrySet()) {
+			/*for (Entry<String[], BigDecimal> res : mapResult.entrySet()) {
 				if (res.getKey()[0].equals(sVName)){
 					bdResult = bdResult.add(BigDecimal.ONE.subtract(res.getValue()));
 				}
+			}*/
+			for (BigDecimal bd : mapResult.get(sVName).values()){
+				bdResult = bdResult.add(BigDecimal.ONE.subtract(bd));
 			}
+			
 			return bdResult;
 		}
 		else {
@@ -653,7 +657,7 @@ public class Utils implements Serializable{
 		}
 	}
 	
-	public List<Tuple2<String, BigDecimal>> getAllVertexInInfFromMatrix(Broadcast<Map<String[], BigDecimal>> bcMapResult, JavaRDD<Vertex> rddVertices){
+	public List<Tuple2<String, BigDecimal>> getAllVertexInInfFromMatrix(Broadcast<Map<String, Map<String, BigDecimal>>> bcMapResult, JavaRDD<Vertex> rddVertices){
 		return rddVertices.mapToPair(vertex -> {
 			String sVName = vertex.getName();
 			return new Tuple2<String, BigDecimal>(sVName,getVertexIndirectInfluenceFromMatrix(bcMapResult.getValue(), sVName));

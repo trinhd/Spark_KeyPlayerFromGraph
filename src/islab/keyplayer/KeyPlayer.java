@@ -102,7 +102,8 @@ public class KeyPlayer {
 				
 				if (args[3].equals("c3")) {
 					//Khởi tạo ma trận kết quả
-					Map<String[], BigDecimal> mapResult = new HashMap<String[], BigDecimal>();
+					//Map<String[], BigDecimal> mapResult = new HashMap<String[], BigDecimal>();
+					Map<String, Map<String, BigDecimal>> mapResult = new HashMap<String, Map<String, BigDecimal>>();
 					
 					//Khởi tạo Thread lưu ma trận kết quả
 					Thread SavingThread;

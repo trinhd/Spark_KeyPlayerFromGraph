@@ -8,10 +8,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public class MatrixResultFromSegment extends Thread {
-	private Map<String[], BigDecimal> mapResult = new HashMap<String[], BigDecimal>();
+	private Map<String, Map<String, BigDecimal>> mapResult = new HashMap<String, Map<String, BigDecimal>>();
 	private List<Segment> listSegment = new ArrayList<Segment>();
 
-	public MatrixResultFromSegment(Map<String[], BigDecimal> mapResult, List<Segment> listSegment) {
+	public MatrixResultFromSegment(Map<String, Map<String, BigDecimal>> mapResult, List<Segment> listSegment) {
 		// TODO Auto-generated constructor stub
 		this.mapResult = mapResult;
 		this.listSegment = listSegment;
@@ -22,7 +22,7 @@ public class MatrixResultFromSegment extends Thread {
 		// TODO Auto-generated method stub
 		try{
 			for (Segment segment : listSegment) {
-				String[] coor = null; //{ segment.getStartVertex(), segment.getEndVertex() };
+				/*String[] coor = null; //{ segment.getStartVertex(), segment.getEndVertex() };
 				BigDecimal bdTemp = null; //mapResult.get(coor);
 				for (Entry<String[], BigDecimal> entry : mapResult.entrySet()) {
 					coor = entry.getKey();
@@ -30,14 +30,32 @@ public class MatrixResultFromSegment extends Thread {
 						bdTemp = entry.getValue();
 						break;
 					}
+				}*/
+				BigDecimal bdTemp = null;
+				boolean fStartVertexExist = false;
+				Map<String, BigDecimal> mTemp = mapResult.get(segment.getStartVertex());
+				if (mTemp != null){
+					fStartVertexExist = true;
+					bdTemp = mTemp.get(segment.getEndVertex());
 				}
+				
 				if (bdTemp != null) {
 					bdTemp = bdTemp.multiply(BigDecimal.ONE.subtract(segment.getIndirectInfluence()));
-					mapResult.replace(coor, bdTemp);
+					mTemp.replace(segment.getEndVertex(), bdTemp);
+					mapResult.replace(segment.getStartVertex(), mTemp);
 				}
 				else {
 					bdTemp = BigDecimal.ONE.subtract(segment.getIndirectInfluence());
-					mapResult.putIfAbsent(new String[]{segment.getStartVertex(), segment.getEndVertex()}, bdTemp);
+					if (!fStartVertexExist){
+						mTemp = new HashMap<String, BigDecimal>();
+						mTemp.put(segment.getEndVertex(), bdTemp);
+						mapResult.put(segment.getStartVertex(), mTemp);
+					}
+					else {
+						mTemp.put(segment.getEndVertex(), bdTemp);
+						mapResult.replace(segment.getStartVertex(), mTemp);
+					}
+					//mapResult.putIfAbsent(new String[]{segment.getStartVertex(), segment.getEndVertex()}, bdTemp);
 				}
 			}
 		}
