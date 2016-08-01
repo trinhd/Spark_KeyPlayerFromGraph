@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -150,7 +151,7 @@ public class KeyPlayer {
 						}
 					}
 
-					BigDecimal bdMax = BigDecimal.ZERO;
+					/*BigDecimal bdMax = BigDecimal.ZERO;
 					String sKP = "";
 					System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
 					
@@ -165,7 +166,11 @@ public class KeyPlayer {
 					}
 
 					System.out.println("Key Player là: ");
-					System.out.println(sKP + ": " + bdMax.toPlainString());
+					System.out.println(sKP + ": " + bdMax.toPlainString());*/
+					
+					Entry<String, BigDecimal> KP = u.getKeyPlayerFromMatrix(mapResult, vertices);
+					System.out.println("Key Player là: ");
+					System.out.println(KP.getKey() + ": " + KP.getValue().toPlainString());
 				}
 			}
 

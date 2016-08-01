@@ -2,6 +2,7 @@ package islab.keyplayer;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -662,5 +663,30 @@ public class Utils implements Serializable{
 			String sVName = vertex.getName();
 			return new Tuple2<String, BigDecimal>(sVName,getVertexIndirectInfluenceFromMatrix(bcMapResult.getValue(), sVName));
 		}).collect();
+	}
+	
+	public Entry<String, BigDecimal> getKeyPlayerFromMatrix(Map<String, Map<String, BigDecimal>> mapResult, List<Vertex> vertices) {
+		BigDecimal bdMax = BigDecimal.ZERO;
+		String sKP = "";
+		System.out.println("Sức ảnh hưởng của tất cả các đỉnh:");
+		for (Vertex vertex : vertices) {
+			BigDecimal bdVertexIndInf = BigDecimal.ZERO;
+			/*for (Entry<String[], BigDecimal> res : mapResult.entrySet()) {
+				if (res.getKey()[0].equals(vertex.getName())){
+					bdVertexIndInf = bdVertexIndInf.add(BigDecimal.ONE.subtract(res.getValue()));
+				}
+			}*/
+			for (BigDecimal bd : mapResult.get(vertex.getName()).values()) {
+				bdVertexIndInf = bdVertexIndInf.add(BigDecimal.ONE.subtract(bd));
+			}
+			
+			System.out.println("[ " + vertex.getName() + ": " + bdVertexIndInf.toPlainString() + " ]");
+			if (bdVertexIndInf.compareTo(bdMax) == 1) {
+				bdMax = bdVertexIndInf;
+				sKP = vertex.getName();
+			}
+		}
+				
+		return new AbstractMap.SimpleEntry(sKP, bdMax);
 	}
 }
